@@ -14,8 +14,6 @@
         'age' => '1 Year',
         'weight' => '45kg',
         'price' => 18000,
-        'seller' => 'John Kamau',
-        'phone' => '+254 712 345 678',
         'description' => 'Healthy Boer goat suitable for breeding and meat production. The goat is active, well-fed and kept under good farm management practices.',
         'image' => 'https://images.unsplash.com/photo-1524024973431-2ad916746881?auto=format&fit=crop&w=1200&q=90'
     ];
@@ -124,31 +122,15 @@
 
                 <div class="border-t mt-8 pt-7">
 
-                    <p class="text-sm text-gray-500">
-                        Seller
-                    </p>
-
-                    <p class="font-bold text-lg">
-                        {{ $goat['seller'] }}
-                    </p>
-
 
                     <div class="flex gap-3 mt-5">
 
                         <a
-                            href="tel:{{ $goat['phone'] }}"
+                            href=""
                             class="flex-1 bg-efarmer-600 text-white text-center py-3 rounded-lg font-bold"
                         >
                             <i class="fa-solid fa-phone mr-2"></i>
-                            Call Seller
-                        </a>
-
-                        <a
-                            href="https://wa.me/254712345678"
-                            class="flex-1 bg-green-100 text-green-800 text-center py-3 rounded-lg font-bold"
-                        >
-                            <i class="fa-brands fa-whatsapp mr-2"></i>
-                            WhatsApp
+                            Buy Now
                         </a>
 
                     </div>
