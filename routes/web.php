@@ -225,6 +225,9 @@ Route::post('/payment/initiate', [PaymentController::class, 'initiate'])
 Route::post('/payment/status', [PaymentController::class, 'status'])
     ->name('payment.status');
 
+Route::get('/payment/receipt/{reference}', [PaymentController::class, 'receipt'])
+    ->name('payment.receipt');
+
 
 /*
 |--------------------------------------------------------------------------

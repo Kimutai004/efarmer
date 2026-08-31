@@ -4,15 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Goat;
 use App\Models\Payment;
-use App\Models\Sale;
 use App\Services\MpesaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
     protected $mpesa;
+    protected const TRANSPORT_FEE = 300;
 
     public function __construct(MpesaService $mpesa)
     {
@@ -35,6 +36,9 @@ class PaymentController extends Controller
             'phone' => 'required|string|max:15',
             'name' => 'required|string|max:150',
             'email' => 'nullable|email',
+            'delivery_address' => 'required|string|max=500',
+            'delivery_town' => 'required|string|max=100',
+            'delivery_notes' => 'nullable|string|max=300',
         ]);
 
         $goat = Goat::findOrFail($data['goat_id']);
@@ -43,24 +47,31 @@ class PaymentController extends Controller
             return back()->with('error', 'This goat is no longer available.');
         }
 
+        $totalAmount = $goat->selling_price + self::TRANSPORT_FEE;
         $reference = 'EF-' . strtoupper(Str::random(8));
 
         $result = $this->mpesa->stkPush(
             $data['phone'],
-            $goat->selling_price,
+            $totalAmount,
             $reference,
-            'Payment for ' . $goat->name . ' (' . $goat->tag_number . ')'
+            'Payment for ' . ($goat->name ?? $goat->tag_number) . ' (incl. transport)'
         );
 
         if ($result['success']) {
             Payment::create([
                 'sale_id' => null,
                 'payment_reference' => $reference,
-                'amount' => $goat->selling_price,
+                'amount' => $totalAmount,
                 'payment_method' => 'mpesa',
                 'phone_number' => $data['phone'],
                 'status' => 'pending',
-                'notes' => 'Buyer: ' . $data['name'] . ' | Goat: ' . $goat->tag_number,
+                'notes' => sprintf(
+                    'Buyer: %s | Goat: %s | Delivery: %s, %s | Transport: KES 300',
+                    $data['name'],
+                    $goat->tag_number,
+                    $data['delivery_address'],
+                    $data['delivery_town']
+                ),
                 'mpesa_response' => json_encode($result),
             ]);
 
@@ -116,8 +127,9 @@ class PaymentController extends Controller
                 'amount' => $amount ?? $payment->amount,
             ]);
 
-            if ($payment->goat) {
-                $goat = $payment->goat;
+            // Mark goat as reserved
+            $goat = Goat::where('tag_number', $this->extractGoatTag($payment->notes))->first();
+            if ($goat) {
                 $goat->update(['status' => 'reserved']);
             }
         } else {
@@ -142,10 +154,38 @@ class PaymentController extends Controller
             return response()->json(['status' => 'not_found']);
         }
 
+        if ($payment->status === 'completed') {
+            return response()->json([
+                'status' => 'completed',
+                'reference' => $payment->payment_reference,
+                'amount' => $payment->amount,
+                'redirect' => route('payment.receipt', ['reference' => $payment->payment_reference]),
+            ]);
+        }
+
         return response()->json([
             'status' => $payment->status,
             'reference' => $payment->payment_reference,
             'amount' => $payment->amount,
         ]);
+    }
+
+    public function receipt($reference)
+    {
+        $payment = Payment::where('payment_reference', $reference)->firstOrFail();
+
+        if ($payment->status !== 'completed') {
+            return redirect()->route('payment.status', ['reference' => $reference]);
+        }
+
+        return view('payments.receipt', compact('payment'));
+    }
+
+    protected function extractGoatTag(string $notes): ?string
+    {
+        if (preg_match('/Goat:\s*([^\s|]+)/', $notes, $matches)) {
+            return $matches[1];
+        }
+        return null;
     }
 }
