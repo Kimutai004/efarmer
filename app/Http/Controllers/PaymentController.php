@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Goat;
 use App\Models\Payment;
+use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Services\MpesaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +16,7 @@ use Illuminate\Support\Str;
 class PaymentController extends Controller
 {
     protected $mpesa;
-    protected const TRANSPORT_FEE = 1;
+    protected const TRANSPORT_FEE = 300;
 
     public function __construct(MpesaService $mpesa)
     {
@@ -58,7 +61,7 @@ class PaymentController extends Controller
         );
 
         if ($result['success']) {
-            $payment = Payment::create([
+            Payment::create([
                 'sale_id' => null,
                 'payment_reference' => $reference,
                 'amount' => $totalAmount,
@@ -66,19 +69,12 @@ class PaymentController extends Controller
                 'phone_number' => $data['phone'],
                 'status' => 'pending',
                 'notes' => sprintf(
-                    'Buyer: %s | Goat: %s | Delivery: %s, %s | Transport: KES 1',
+                    'Buyer: %s | Goat: %s | Delivery: %s, %s | Transport: KES 300',
                     $data['name'],
                     $goat->tag_number,
                     $data['delivery_address'],
                     $data['delivery_town']
                 ),
-                'mpesa_response' => json_encode($result),
-            ]);
-
-            Log::info('Payment created', [
-                'id' => $payment->id,
-                'reference' => $reference,
-                'phone' => $data['phone'],
                 'mpesa_response' => json_encode($result),
             ]);
 
@@ -164,15 +160,69 @@ class PaymentController extends Controller
                 'amount' => $amount ?? $payment->amount,
             ]);
 
-            // Mark goat as reserved
-            $goat = Goat::where('tag_number', $this->extractGoatTag($payment->notes))->first();
+            // Extract buyer info from notes
+            $buyerName = 'Unknown';
+            $goatTag = '';
+            if (preg_match('/Buyer:\s*([^|]+)/', $payment->notes, $nameMatch)) {
+                $buyerName = trim($nameMatch[1]);
+            }
+            if (preg_match('/Goat:\s*([^|]+)/', $payment->notes, $goatMatch)) {
+                $goatTag = trim($goatMatch[1]);
+            }
+
+            // Find the goat
+            $goat = Goat::where('tag_number', $goatTag)->first();
+
+            // Create or find customer
+            $customer = Customer::firstOrCreate(
+                ['phone' => $payment->phone_number],
+                [
+                    'name' => $buyerName,
+                    'email' => null,
+                    'location' => 'Kenya',
+                ]
+            );
+
+            // Create sale record
             if ($goat) {
-                $goat->update(['status' => 'reserved']);
+                DB::transaction(function () use ($payment, $customer, $goat) {
+                    $sale = Sale::create([
+                        'invoice_number' => $payment->payment_reference,
+                        'customer_id' => $customer->id,
+                        'sale_date' => now(),
+                        'subtotal' => $goat->selling_price,
+                        'discount' => 0,
+                        'total' => $payment->amount,
+                        'amount_paid' => $payment->amount,
+                        'balance' => 0,
+                        'status' => 'completed',
+                        'payment_status' => 'paid',
+                        'notes' => 'M-Pesa payment: ' . $payment->transaction_id,
+                    ]);
+
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'goat_id' => $goat->id,
+                        'quantity' => 1,
+                        'unit_price' => $goat->selling_price,
+                        'total' => $goat->selling_price,
+                    ]);
+
+                    // Update payment with sale_id
+                    $payment->update(['sale_id' => $sale->id]);
+
+                    // Mark goat as sold
+                    $goat->update([
+                        'status' => 'sold',
+                        'sold_at' => now(),
+                    ]);
+                });
             }
 
             Log::info('Payment completed', [
                 'reference' => $payment->payment_reference,
                 'transaction_id' => $transactionId,
+                'customer_id' => $customer->id ?? null,
             ]);
         } else {
             $payment->update([
@@ -226,13 +276,5 @@ class PaymentController extends Controller
         }
 
         return view('payments.receipt', compact('payment'));
-    }
-
-    protected function extractGoatTag(string $notes): ?string
-    {
-        if (preg_match('/Goat:\s*([^\s|]+)/', $notes, $matches)) {
-            return $matches[1];
-        }
-        return null;
     }
 }

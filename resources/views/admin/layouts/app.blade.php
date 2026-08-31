@@ -70,6 +70,9 @@
                 <a href="{{ route('admin.customers.index') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-users w-5"></i> Customers
                 </a>
+                <a href="{{ route('admin.payments.index') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-credit-card w-5"></i> Payments
+                </a>
 
                 <a href="{{ route('admin.sales.index') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.sales.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-cart-shopping w-5"></i> Sales

@@ -381,4 +381,20 @@ Route::middleware([
             [ReportController::class, 'index']
         )->name('reports.index');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Payments
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+    '/payments',
+    [App\Http\Controllers\Admin\PaymentController::class, 'index']
+)->name('payments.index');
+
+Route::get(
+    '/payments/{payment}',
+    [App\Http\Controllers\Admin\PaymentController::class, 'show']
+)->name('payments.show');
+
     });
