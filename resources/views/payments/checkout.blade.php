@@ -36,11 +36,11 @@
                             </div>
                             <div class="flex justify-between text-sm mt-1">
                                 <span>Transport Fee:</span>
-                                <span class="font-semibold">KSh 300</span>
+                                <span class="font-semibold">KSh 1</span>
                             </div>
                             <div class="border-t mt-2 pt-2 flex justify-between">
                                 <span class="font-bold">Total:</span>
-                                <span class="text-xl font-extrabold text-green-700">KSh {{ number_format($goat->selling_price + 300) }}</span>
+                                <span class="text-xl font-extrabold text-green-700">KSh {{ number_format($goat->selling_price + 1) }}</span>
                             </div>
                         </div>
                     </div>
@@ -97,7 +97,7 @@
 
                     <button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-bold text-lg transition">
                         <i class="fa-solid fa-mobile-screen mr-2"></i>
-                        Pay KSh {{ number_format($goat->selling_price + 300) }} with M-Pesa
+                        Pay KSh {{ number_format($goat->selling_price + 1) }} with M-Pesa
                     </button>
 
                     <p class="text-center text-xs text-gray-500">

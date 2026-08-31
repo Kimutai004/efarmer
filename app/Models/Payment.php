@@ -14,8 +14,12 @@ class Payment extends Model
         'payment_reference',
         'amount',
         'payment_method',
+        'transaction_id',
+        'phone_number',
+        'status',
         'payment_date',
         'notes',
+        'mpesa_response',
     ];
 
     protected $casts = [

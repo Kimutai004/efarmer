@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 class PaymentController extends Controller
 {
     protected $mpesa;
-    protected const TRANSPORT_FEE = 300;
+    protected const TRANSPORT_FEE = 1;
 
     public function __construct(MpesaService $mpesa)
     {
@@ -36,9 +36,9 @@ class PaymentController extends Controller
             'phone' => 'required|string|max:15',
             'name' => 'required|string|max:150',
             'email' => 'nullable|email',
-            'delivery_address' => 'required|string|max=500',
-            'delivery_town' => 'required|string|max=100',
-            'delivery_notes' => 'nullable|string|max=300',
+            'delivery_address' => 'required|string|max:500',
+            'delivery_town' => 'required|string|max:100',
+            'delivery_notes' => 'nullable|string|max:300',
         ]);
 
         $goat = Goat::findOrFail($data['goat_id']);
@@ -58,7 +58,7 @@ class PaymentController extends Controller
         );
 
         if ($result['success']) {
-            Payment::create([
+            $payment = Payment::create([
                 'sale_id' => null,
                 'payment_reference' => $reference,
                 'amount' => $totalAmount,
@@ -66,12 +66,19 @@ class PaymentController extends Controller
                 'phone_number' => $data['phone'],
                 'status' => 'pending',
                 'notes' => sprintf(
-                    'Buyer: %s | Goat: %s | Delivery: %s, %s | Transport: KES 300',
+                    'Buyer: %s | Goat: %s | Delivery: %s, %s | Transport: KES 1',
                     $data['name'],
                     $goat->tag_number,
                     $data['delivery_address'],
                     $data['delivery_town']
                 ),
+                'mpesa_response' => json_encode($result),
+            ]);
+
+            Log::info('Payment created', [
+                'id' => $payment->id,
+                'reference' => $reference,
+                'phone' => $data['phone'],
                 'mpesa_response' => json_encode($result),
             ]);
 
@@ -98,11 +105,41 @@ class PaymentController extends Controller
         }
 
         $checkoutId = $stkCallback['CheckoutRequestID'] ?? null;
+        $merchantId = $stkCallback['MerchantRequestID'] ?? null;
         $resultCode = $stkCallback['ResultCode'] ?? null;
 
+        // Try to find payment by checkout ID in mpesa_response
         $payment = Payment::where('mpesa_response', 'like', "%{$checkoutId}%")->first();
 
+        // Fallback: try to find by merchant ID
+        if (!$payment && $merchantId) {
+            $payment = Payment::where('mpesa_response', 'like', "%{$merchantId}%")->first();
+        }
+
+        // Fallback: try to find by phone number and pending status
         if (!$payment) {
+            $phone = $stkCallback['CallbackMetadata']['Item'][4]['Value'] ?? null;
+            if ($phone) {
+                $phone = '254' . substr($phone, -9);
+                $payment = Payment::where('phone_number', $phone)
+                    ->where('status', 'pending')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            }
+        }
+
+        // Last fallback: get the most recent pending payment
+        if (!$payment) {
+            $payment = Payment::where('status', 'pending')
+                ->orderBy('created_at', 'desc')
+                ->first();
+        }
+
+        if (!$payment) {
+            Log::warning('Payment not found for callback', [
+                'checkout_id' => $checkoutId,
+                'merchant_id' => $merchantId,
+            ]);
             return response()->json(['status' => 'received']);
         }
 
@@ -132,10 +169,20 @@ class PaymentController extends Controller
             if ($goat) {
                 $goat->update(['status' => 'reserved']);
             }
+
+            Log::info('Payment completed', [
+                'reference' => $payment->payment_reference,
+                'transaction_id' => $transactionId,
+            ]);
         } else {
             $payment->update([
                 'status' => 'failed',
                 'notes' => $payment->notes . ' | Failed: ' . ($stkCallback['ResultDesc'] ?? 'Unknown error'),
+            ]);
+
+            Log::info('Payment failed', [
+                'reference' => $payment->payment_reference,
+                'reason' => $stkCallback['ResultDesc'] ?? 'Unknown',
             ]);
         }
 

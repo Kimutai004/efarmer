@@ -12,8 +12,9 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('sale_id')
+                ->nullable()
                 ->constrained('sales')
-                ->cascadeOnDelete();
+                ->nullOnDelete();
 
             $table->string('payment_reference')->unique();
             $table->decimal('amount', 12, 2);
