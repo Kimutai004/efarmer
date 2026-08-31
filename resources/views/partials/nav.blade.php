@@ -75,10 +75,6 @@
     Goats for Sale
 </a>
 
-<a href="{{ route('seller.create') }}">
-    Sell Your Goat
-</a>
-
 <a href="{{ route('how-it-works') }}">
     How It Works
 </a>
