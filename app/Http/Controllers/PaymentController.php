@@ -16,11 +16,12 @@ use Illuminate\Support\Str;
 class PaymentController extends Controller
 {
     protected $mpesa;
-    protected const TRANSPORT_FEE = 300;
+    protected int $transportFee;
 
     public function __construct(MpesaService $mpesa)
     {
         $this->mpesa = $mpesa;
+        $this->transportFee = (int) config('mpesa.transport_fee_per_goat', 300);
     }
 
     public function checkout(Goat $goat)
@@ -29,6 +30,9 @@ class PaymentController extends Controller
             return back()->with('error', 'This goat is no longer available.');
         }
 
+        // Eager load photos to avoid N+1 query
+        $goat->load('primaryPhoto');
+
         return view('payments.checkout', compact('goat'));
     }
 
@@ -36,6 +40,7 @@ class PaymentController extends Controller
     {
         $data = $request->validate([
             'goat_id' => 'required|exists:goats,id',
+            'quantity' => 'required|integer|min:1|max:10',
             'phone' => 'required|string|max:15',
             'name' => 'required|string|max:150',
             'email' => 'nullable|email',
@@ -45,19 +50,23 @@ class PaymentController extends Controller
         ]);
 
         $goat = Goat::findOrFail($data['goat_id']);
+        $quantity = $data['quantity'];
 
         if ($goat->status !== 'available') {
             return back()->with('error', 'This goat is no longer available.');
         }
 
-        $totalAmount = $goat->selling_price + self::TRANSPORT_FEE;
+        $subtotal = $goat->selling_price * $quantity;
+        $transportFee = $this->transportFee * $quantity;
+        $totalAmount = $subtotal + $transportFee;
         $reference = 'EF-' . strtoupper(Str::random(8));
 
+        $quantityLabel = $quantity > 1 ? " (x{$quantity})" : '';
         $result = $this->mpesa->stkPush(
             $data['phone'],
             $totalAmount,
             $reference,
-            'Payment for ' . ($goat->name ?? $goat->tag_number) . ' (incl. transport)'
+            'Payment for ' . ($goat->name ?? $goat->tag_number) . $quantityLabel . ' (incl. transport)'
         );
 
         if ($result['success']) {
@@ -69,11 +78,15 @@ class PaymentController extends Controller
                 'phone_number' => $data['phone'],
                 'status' => 'pending',
                 'notes' => sprintf(
-                    'Buyer: %s | Goat: %s | Delivery: %s, %s | Transport: KES 300',
+                    'Buyer: %s | Goat: %s | Qty: %d | Delivery: %s, %s | Transport: KES %s (KES %s × %d)',
                     $data['name'],
                     $goat->tag_number,
+                    $quantity,
                     $data['delivery_address'],
-                    $data['delivery_town']
+                    $data['delivery_town'],
+                    $transportFee,
+                    $this->transportFee,
+                    $quantity
                 ),
                 'mpesa_response' => json_encode($result),
             ]);
@@ -185,12 +198,20 @@ class PaymentController extends Controller
 
             // Create sale record
             if ($goat) {
-                DB::transaction(function () use ($payment, $customer, $goat) {
+                // Extract quantity from payment notes (format: "Buyer: ... | Goat: ... | Qty: X | ...")
+                $quantity = 1;
+                if (preg_match('/Qty:\s*(\d+)/', $payment->notes, $matches)) {
+                    $quantity = (int) $matches[1];
+                }
+
+                $subtotal = $goat->selling_price * $quantity;
+
+                DB::transaction(function () use ($payment, $customer, $goat, $quantity, $subtotal) {
                     $sale = Sale::create([
                         'invoice_number' => $payment->payment_reference,
                         'customer_id' => $customer->id,
                         'sale_date' => now(),
-                        'subtotal' => $goat->selling_price,
+                        'subtotal' => $subtotal,
                         'discount' => 0,
                         'total' => $payment->amount,
                         'amount_paid' => $payment->amount,
@@ -203,9 +224,9 @@ class PaymentController extends Controller
                     SaleItem::create([
                         'sale_id' => $sale->id,
                         'goat_id' => $goat->id,
-                        'quantity' => 1,
+                        'quantity' => $quantity,
                         'unit_price' => $goat->selling_price,
-                        'total' => $goat->selling_price,
+                        'total' => $subtotal,
                     ]);
 
                     // Update payment with sale_id

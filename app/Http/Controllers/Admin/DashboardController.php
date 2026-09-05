@@ -14,40 +14,49 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Goat statistics
-        $totalGoats = Goat::count();
+        // Optimized goat statistics - single query with conditional aggregation
+        $goatStats = Goat::selectRaw('
+            COUNT(*) as total,
+            SUM(CASE WHEN status = "available" THEN 1 ELSE 0 END) as available,
+            SUM(CASE WHEN status = "reserved" THEN 1 ELSE 0 END) as reserved,
+            SUM(CASE WHEN status = "sold" THEN 1 ELSE 0 END) as sold
+        ')->first();
 
-        $breeds = Breed::count();
+        $totalGoats = $goatStats->total;
+        $availableGoats = $goatStats->available;
+        $reservedGoats = $goatStats->reserved;
+        $soldGoats = $goatStats->sold;
 
-        $availableGoats = Goat::where('status', 'available')->count();
+        // Breed count (cached for performance)
+        $breeds = cache()->remember('breeds_count', 3600, function () {
+            return Breed::count();
+        });
 
-        $reservedGoats = Goat::where('status', 'reserved')->count();
+        // Customer statistics (cached for performance)
+        $customers = cache()->remember('customers_count', 3600, function () {
+            return Customer::count();
+        });
 
-        $soldGoats = Goat::where('status', 'sold')->count();
+        // Sales statistics - single query with conditional aggregation
+        $salesStats = Sale::where('status', 'completed')
+            ->selectRaw('
+                COALESCE(SUM(total), 0) as total_sales,
+                COALESCE(SUM(amount_paid), 0) as total_paid,
+                COALESCE(SUM(balance), 0) as outstanding
+            ')
+            ->first();
 
+        $totalSales = $salesStats->total_sales;
+        $totalPaid = $salesStats->total_paid;
+        $outstanding = $salesStats->outstanding;
 
-        // Customer statistics
-        $customers = Customer::count();
-
-
-        // Sales statistics
-        $totalSales = Sale::where('status', 'completed')
-            ->sum('total');
-
-        $totalPaid = Sale::where('status', 'completed')
-            ->sum('amount_paid');
-
-        $outstanding = Sale::where('status', 'completed')
-            ->sum('balance');
-
-
-        // Expenses
-        $totalExpenses = Expense::sum('amount');
-
+        // Expenses (cached for performance)
+        $totalExpenses = cache()->remember('total_expenses', 300, function () {
+            return Expense::sum('amount');
+        });
 
         // Profit
         $profit = $totalSales - $totalExpenses;
-
 
         // Monthly sales
         $monthlySales = Sale::select(
@@ -60,15 +69,13 @@ class DashboardController extends Controller
             ->orderBy('month')
             ->get();
 
-
-        // Recent sales
+        // Recent sales with eager loading
         $recentSales = Sale::with('customer')
             ->latest()
             ->limit(8)
             ->get();
 
-
-        // Recent goats
+        // Recent goats with eager loading
         $recentGoats = Goat::with([
                 'breed',
                 'photos'
@@ -76,7 +83,6 @@ class DashboardController extends Controller
             ->latest()
             ->limit(6)
             ->get();
-
 
         return view('admin.dashboard', compact(
             'totalGoats',

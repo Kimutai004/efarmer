@@ -220,9 +220,11 @@ Route::get('/checkout/{goat}', [PaymentController::class, 'checkout'])
     ->name('checkout');
 
 Route::post('/payment/initiate', [PaymentController::class, 'initiate'])
+    ->middleware('throttle:payment')
     ->name('payment.initiate');
 
 Route::post('/payment/status', [PaymentController::class, 'status'])
+    ->middleware('throttle:payment-status')
     ->name('payment.status');
 
 Route::get('/payment/receipt/{reference}', [PaymentController::class, 'receipt'])

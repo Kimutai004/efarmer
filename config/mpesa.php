@@ -7,4 +7,5 @@ return [
     'shortcode' => env('MPESA_SHORTCODE', '174379'),
     'env' => env('MPESA_ENV', 'sandbox'),
     'callback_url' => env('MPESA_CALLBACK_URL', 'http://localhost:8000/api/mpesa/callback'),
+    'transport_fee_per_goat' => env('TRANSPORT_FEE_PER_GOAT', 300),
 ];

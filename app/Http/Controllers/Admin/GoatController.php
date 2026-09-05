@@ -18,54 +18,33 @@ class GoatController extends Controller
             'breed',
             'photos'
         ]);
-        $breeds = Breed::where('status', 'active')
-    ->orderBy('name')
-    ->get();
+
+        // Cache breeds query - rarely changes
+        $breeds = cache()->remember('active_breeds', 3600, function () {
+            return Breed::where('status', 'active')
+                ->orderBy('name')
+                ->get();
+        });
 
         if ($request->filled('search')) {
-
             $search = $request->search;
-
             $query->where(function ($q) use ($search) {
-
-                $q->where(
-                    'tag_number',
-                    'like',
-                    "%{$search}%"
-                )
-                ->orWhere(
-                    'name',
-                    'like',
-                    "%{$search}%"
-                )
-                ->orWhere(
-                    'color',
-                    'like',
-                    "%{$search}%"
-                );
-
+                $q->where('tag_number', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('color', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('status')) {
-            $query->where(
-                'status',
-                $request->status
-            );
+            $query->where('status', $request->status);
         }
 
         if ($request->filled('gender')) {
-            $query->where(
-                'gender',
-                $request->gender
-            );
+            $query->where('gender', $request->gender);
         }
 
         if ($request->filled('breed_id')) {
-            $query->where(
-                'breed_id',
-                $request->breed_id
-            );
+            $query->where('breed_id', $request->breed_id);
         }
 
         $goats = $query
@@ -73,35 +52,18 @@ class GoatController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $breeds = Breed::where(
-            'status',
-            'active'
-        )
-            ->orderBy('name')
-            ->get();
-
-        return view(
-            'admin.goats.index',
-            compact(
-                'goats',
-                'breeds'
-            )
-        );
+        return view('admin.goats.index', compact('goats', 'breeds'));
     }
 
     public function create()
     {
-        $breeds = Breed::where(
-            'status',
-            'active'
-        )
-            ->orderBy('name')
-            ->get();
+        $breeds = cache()->remember('active_breeds', 3600, function () {
+            return Breed::where('status', 'active')
+                ->orderBy('name')
+                ->get();
+        });
 
-        return view(
-            'admin.goats.create',
-            compact('breeds')
-        );
+        return view('admin.goats.create', compact('breeds'));
     }
 
     public function store(Request $request)
@@ -204,12 +166,11 @@ class GoatController extends Controller
 
     public function edit(Goat $goat)
     {
-        $breeds = Breed::where(
-            'status',
-            'active'
-        )
-            ->orderBy('name')
-            ->get();
+        $breeds = cache()->remember('active_breeds', 3600, function () {
+            return Breed::where('status', 'active')
+                ->orderBy('name')
+                ->get();
+        });
 
         $goat->load('photos');
 

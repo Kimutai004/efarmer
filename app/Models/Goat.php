@@ -47,6 +47,11 @@ class Goat extends Model
         return $this->hasMany(GoatPhoto::class);
     }
 
+    public function primaryPhoto()
+    {
+        return $this->hasOne(GoatPhoto::class)->where('is_primary', true);
+    }
+
     public function healthRecords()
     {
         return $this->hasMany(GoatHealthRecord::class)

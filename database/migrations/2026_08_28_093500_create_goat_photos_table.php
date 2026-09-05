@@ -19,6 +19,9 @@ return new class extends Migration
             $table->boolean('is_primary')->default(false);
 
             $table->timestamps();
+
+            // Indexes for frequently queried columns
+            $table->index(['goat_id', 'is_primary']);
         });
     }
 

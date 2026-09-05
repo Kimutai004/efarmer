@@ -29,18 +29,40 @@
                         <p class="text-gray-500 text-sm mt-1">{{ $goat->breed->name ?? 'Unknown' }} &middot; {{ ucfirst($goat->gender) }} &middot; {{ $goat->weight ? $goat->weight . 'kg' : '' }}</p>
                         <p class="text-gray-500 text-sm"><i class="fa-solid fa-location-dot text-efarmer-600"></i> {{ $goat->location ?? 'Kenya' }}</p>
 
+                        <!-- Quantity Selector -->
+                        <div class="mt-4">
+                            <label class="block font-semibold mb-2">Quantity</label>
+                            <div class="flex items-center gap-3">
+                                <button type="button" id="decreaseQty" class="w-10 h-10 rounded-lg bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-lg font-bold transition">
+                                    <i class="fa-solid fa-minus"></i>
+                                </button>
+                                <input type="number" id="quantity" name="quantity" value="1" min="1" max="10" class="w-16 text-center border rounded-lg py-2 font-bold text-lg" readonly>
+                                <button type="button" id="increaseQty" class="w-10 h-10 rounded-lg bg-efarmer-600 hover:bg-efarmer-700 text-white flex items-center justify-center text-lg font-bold transition">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="mt-4 bg-white rounded-xl p-4 border">
                             <div class="flex justify-between text-sm">
-                                <span>Goat Price:</span>
+                                <span>Goat Price (each):</span>
                                 <span class="font-semibold">KSh {{ number_format($goat->selling_price) }}</span>
                             </div>
                             <div class="flex justify-between text-sm mt-1">
-                                <span>Transport Fee:</span>
-                                <span class="font-semibold">KSh 1</span>
+                                <span>Quantity:</span>
+                                <span class="font-semibold" id="qtyDisplay">1</span>
+                            </div>
+                            <div class="flex justify-between text-sm mt-1">
+                                <span>Subtotal:</span>
+                                <span class="font-semibold" id="subtotalDisplay">KSh {{ number_format($goat->selling_price) }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm mt-1">
+                                <span>Transport Fee (per goat):</span>
+                                <span class="font-semibold" id="transportDisplay">KSh {{ number_format(config('mpesa.transport_fee_per_goat', 300)) }}</span>
                             </div>
                             <div class="border-t mt-2 pt-2 flex justify-between">
                                 <span class="font-bold">Total:</span>
-                                <span class="text-xl font-extrabold text-green-700">KSh {{ number_format($goat->selling_price + 1) }}</span>
+                                <span class="text-xl font-extrabold text-green-700" id="totalDisplay">KSh {{ number_format($goat->selling_price + config('mpesa.transport_fee_per_goat', 300)) }}</span>
                             </div>
                         </div>
                     </div>
@@ -97,7 +119,7 @@
 
                     <button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-bold text-lg transition">
                         <i class="fa-solid fa-mobile-screen mr-2"></i>
-                        Pay KSh {{ number_format($goat->selling_price + 1) }} with M-Pesa
+                        <span id="payButtonText">Pay KSh {{ number_format($goat->selling_price + config('mpesa.transport_fee_per_goat', 300)) }} with M-Pesa</span>
                     </button>
 
                     <p class="text-center text-xs text-gray-500">
@@ -113,3 +135,58 @@
 </section>
 
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const goatPrice = {{ $goat->selling_price }};
+        const transportFeePerGoat = {{ config('mpesa.transport_fee_per_goat', 300) }};
+        const maxQuantity = 10;
+
+        const quantityInput = document.getElementById('quantity');
+        const decreaseBtn = document.getElementById('decreaseQty');
+        const increaseBtn = document.getElementById('increaseQty');
+        const qtyDisplay = document.getElementById('qtyDisplay');
+        const subtotalDisplay = document.getElementById('subtotalDisplay');
+        const transportDisplay = document.getElementById('transportDisplay');
+        const totalDisplay = document.getElementById('totalDisplay');
+        const payButtonText = document.getElementById('payButtonText');
+
+        function formatCurrency(amount) {
+            return 'KSh ' + amount.toLocaleString('en-KE');
+        }
+
+        function updateDisplay() {
+            const qty = parseInt(quantityInput.value);
+            const subtotal = goatPrice * qty;
+            const transportFee = transportFeePerGoat * qty;
+            const total = subtotal + transportFee;
+
+            qtyDisplay.textContent = qty;
+            subtotalDisplay.textContent = formatCurrency(subtotal);
+            transportDisplay.textContent = formatCurrency(transportFee) + ' (' + qty + ' × ' + formatCurrency(transportFeePerGoat) + ')';
+            totalDisplay.textContent = formatCurrency(total);
+            payButtonText.textContent = 'Pay ' + formatCurrency(total) + ' with M-Pesa';
+        }
+
+        decreaseBtn.addEventListener('click', function() {
+            let qty = parseInt(quantityInput.value);
+            if (qty > 1) {
+                quantityInput.value = qty - 1;
+                updateDisplay();
+            }
+        });
+
+        increaseBtn.addEventListener('click', function() {
+            let qty = parseInt(quantityInput.value);
+            if (qty < maxQuantity) {
+                quantityInput.value = qty + 1;
+                updateDisplay();
+            }
+        });
+
+        // Initial display update
+        updateDisplay();
+    });
+</script>
+@endpush

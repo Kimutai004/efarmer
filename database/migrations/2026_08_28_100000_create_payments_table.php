@@ -27,6 +27,12 @@ return new class extends Migration
             $table->text('mpesa_response')->nullable();
 
             $table->timestamps();
+
+            // Indexes for frequently queried columns
+            $table->index('status');
+            $table->index('phone_number');
+            $table->index('created_at');
+            $table->index(['status', 'created_at']);
         });
     }
 

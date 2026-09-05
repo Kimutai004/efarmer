@@ -42,6 +42,13 @@ return new class extends Migration
             $table->text('notes')->nullable();
 
             $table->timestamps();
+
+            // Indexes for frequently queried columns
+            $table->index('status');
+            $table->index('payment_status');
+            $table->index('sale_date');
+            $table->index('customer_id');
+            $table->index(['status', 'sale_date']);
         });
     }
 

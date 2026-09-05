@@ -43,6 +43,59 @@
 
     <div class="flex h-screen overflow-hidden">
 
+        <!-- Mobile Sidebar -->
+        <div id="mobileSidebar" class="fixed inset-0 z-50 hidden md:hidden" aria-hidden="true">
+            <button type="button" class="absolute inset-0 w-full h-full bg-black/50" aria-label="Close navigation" onclick="document.getElementById('mobileSidebar').classList.add('hidden')"></button>
+            <aside class="relative z-10 w-64 h-full bg-efarmer-900 text-white flex flex-col shadow-xl">
+                <div class="p-5 border-b border-white/10 flex items-start justify-between">
+                    <div>
+                        <a href="{{ route('admin.dashboard') }}" class="text-2xl font-extrabold">
+                            E<span class="text-green-400">f</span>armer
+                        </a>
+                        <p class="text-xs text-green-200/60 mt-1">Admin Panel</p>
+                    </div>
+                    <button type="button" class="text-green-200 hover:text-white" aria-label="Close navigation" onclick="document.getElementById('mobileSidebar').classList.add('hidden')">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <nav class="flex-1 overflow-y-auto py-4">
+                    <div class="px-5 mb-2 text-xs uppercase text-green-200/50 font-semibold">Main</div>
+
+                    <a href="{{ route('admin.dashboard') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                        <i class="fa-solid fa-chart-line w-5"></i> Dashboard
+                    </a>
+                    <a href="{{ route('admin.goats.index') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.goats.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-cow w-5"></i> Goats
+                    </a>
+                    <a href="{{ route('admin.breeds.index') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.breeds.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-dna w-5"></i> Breeds
+                    </a>
+                    <a href="{{ route('admin.customers.index') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-users w-5"></i> Customers
+                    </a>
+                    <a href="{{ route('admin.payments.index') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-credit-card w-5"></i> Payments
+                    </a>
+                    <a href="{{ route('admin.sales.index') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.sales.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-cart-shopping w-5"></i> Sales
+                    </a>
+                    <a href="{{ route('admin.expenses.index') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.expenses.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-money-bill w-5"></i> Expenses
+                    </a>
+                    <a href="{{ route('admin.reports.index') }}" class="sidebar-link flex items-center gap-3 px-5 py-3 {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-file-lines w-5"></i> Reports
+                    </a>
+                </nav>
+
+                <div class="p-4 border-t border-white/10">
+                    <a href="{{ route('home') }}" class="flex items-center gap-2 text-sm text-green-200/70 hover:text-white">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> View Site
+                    </a>
+                </div>
+            </aside>
+        </div>
+
         <!-- Sidebar -->
         <aside class="w-64 bg-efarmer-900 text-white flex-shrink-0 hidden md:flex flex-col">
             <div class="p-5 border-b border-white/10">
