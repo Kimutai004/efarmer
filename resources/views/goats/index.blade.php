@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('title', 'Goats for Sale | Efarmer')
-
 @section('description', 'Find quality goats for sale from verified farmers across Kenya.')
 
 @section('content')
@@ -47,7 +46,7 @@
                     Filter Goats
                 </h2>
 
-                <form>
+                <form action="{{ route('goats.index') }}" method="GET">
 
                     <div class="mb-5">
 
@@ -58,6 +57,7 @@
                         <input
                             type="text"
                             name="search"
+                            value="{{ request('search') }}"
                             placeholder="Search goats..."
                             class="w-full mt-2 border rounded-lg px-4 py-3"
                         >
@@ -71,14 +71,12 @@
                             Breed
                         </label>
 
-                        <select class="w-full mt-2 border rounded-lg px-4 py-3">
+                        <select name="breed_id" class="w-full mt-2 border rounded-lg px-4 py-3">
 
-                            <option>All Breeds</option>
-                            <option>Boer</option>
-                            <option>Galla</option>
-                            <option>Alpine</option>
-                            <option>Saanen</option>
-                            <option>Toggenburg</option>
+                            <option value="">All Breeds</option>
+                            @foreach($breeds as $breed)
+                                <option value="{{ $breed->id }}" {{ request('breed_id') == $breed->id ? 'selected' : '' }}>{{ $breed->name }}</option>
+                            @endforeach
 
                         </select>
 
@@ -91,15 +89,15 @@
                             County
                         </label>
 
-                        <select class="w-full mt-2 border rounded-lg px-4 py-3">
+                        <select name="location" class="w-full mt-2 border rounded-lg px-4 py-3">
 
-                            <option>All Counties</option>
-                            <option>Nairobi</option>
-                            <option>Nakuru</option>
-                            <option>Kiambu</option>
-                            <option>Machakos</option>
-                            <option>Kajiado</option>
-                            <option>Nyeri</option>
+                            <option value="">All Counties</option>
+                            <option value="Nairobi" {{ request('location') == 'Nairobi' ? 'selected' : '' }}>Nairobi</option>
+                            <option value="Nakuru" {{ request('location') == 'Nakuru' ? 'selected' : '' }}>Nakuru</option>
+                            <option value="Kiambu" {{ request('location') == 'Kiambu' ? 'selected' : '' }}>Kiambu</option>
+                            <option value="Machakos" {{ request('location') == 'Machakos' ? 'selected' : '' }}>Machakos</option>
+                            <option value="Kajiado" {{ request('location') == 'Kajiado' ? 'selected' : '' }}>Kajiado</option>
+                            <option value="Nyeri" {{ request('location') == 'Nyeri' ? 'selected' : '' }}>Nyeri</option>
 
                         </select>
 
@@ -115,12 +113,12 @@
                         <div class="mt-3 space-y-2">
 
                             <label class="flex gap-2">
-                                <input type="radio" name="gender">
+                                <input type="radio" name="gender" value="male" {{ request('gender') == 'male' ? 'checked' : '' }}>
                                 Male
                             </label>
 
                             <label class="flex gap-2">
-                                <input type="radio" name="gender">
+                                <input type="radio" name="gender" value="female" {{ request('gender') == 'female' ? 'checked' : '' }}>
                                 Female
                             </label>
 
@@ -135,20 +133,32 @@
                             Maximum Price
                         </label>
 
-                        <input
-                            type="number"
-                            placeholder="KSh"
-                            class="w-full mt-2 border rounded-lg px-4 py-3"
-                        >
+                        <select name="max_price" class="w-full mt-2 border rounded-lg px-4 py-3">
+                            <option value="">Any Price</option>
+                            <option value="10000" {{ request('max_price') == '10000' ? 'selected' : '' }}>KSh 10,000</option>
+                            <option value="15000" {{ request('max_price') == '15000' ? 'selected' : '' }}>KSh 15,000</option>
+                            <option value="20000" {{ request('max_price') == '20000' ? 'selected' : '' }}>KSh 20,000</option>
+                            <option value="30000" {{ request('max_price') == '30000' ? 'selected' : '' }}>KSh 30,000</option>
+                            <option value="50000" {{ request('max_price') == '50000' ? 'selected' : '' }}>KSh 50,000</option>
+                            <option value="100000" {{ request('max_price') == '100000' ? 'selected' : '' }}>KSh 100,000</option>
+                        </select>
 
                     </div>
 
 
                     <button
+                        type="submit"
                         class="w-full bg-efarmer-600 hover:bg-efarmer-700 text-white py-3 rounded-lg font-bold"
                     >
                         Apply Filters
                     </button>
+
+                    <a
+                        href="{{ route('goats.index') }}"
+                        class="block text-center mt-3 text-sm text-gray-500 hover:text-gray-700"
+                    >
+                        Clear Filters
+                    </a>
 
                 </form>
 
@@ -168,18 +178,16 @@
                         </h2>
 
                         <p class="text-gray-500 text-sm mt-1">
-                            124 goats available
+                            {{ $goats->total() }} goats available
                         </p>
 
                     </div>
 
 
-                    <select class="border rounded-lg px-4 py-2">
-
-                        <option>Newest</option>
-                        <option>Price: Low to High</option>
-                        <option>Price: High to Low</option>
-
+                    <select class="border rounded-lg px-4 py-2" onchange="window.location.href=this.value">
+                        <option value="{{ route('goats.index', array_merge(request()->query(), ['sort' => 'newest'])) }}">Newest</option>
+                        <option value="{{ route('goats.index', array_merge(request()->query(), ['sort' => 'price_low'])) }}">Price: Low to High</option>
+                        <option value="{{ route('goats.index', array_merge(request()->query(), ['sort' => 'price_high'])) }}">Price: High to Low</option>
                     </select>
 
                 </div>
@@ -188,91 +196,17 @@
                 <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
 
 
-                    @php
-
-                        $goats = [
-                            [
-                                'id' => 1,
-                                'name' => 'Boer Male Goat',
-                                'breed' => 'Boer',
-                                'location' => 'Nakuru',
-                                'gender' => 'Male',
-                                'age' => '1 Year',
-                                'weight' => '45kg',
-                                'price' => 18000,
-                                'image' => 'https://images.unsplash.com/photo-1524024973431-2ad916746881?auto=format&fit=crop&w=700&q=80'
-                            ],
-                            [
-                                'id' => 2,
-                                'name' => 'Alpine Female Goat',
-                                'breed' => 'Alpine',
-                                'location' => 'Kiambu',
-                                'gender' => 'Female',
-                                'age' => '1.5 Years',
-                                'weight' => '40kg',
-                                'price' => 15500,
-                                'image' => 'https://images.unsplash.com/photo-1551884831-bbf3cdc6469e?auto=format&fit=crop&w=700&q=80'
-                            ],
-                            [
-                                'id' => 3,
-                                'name' => 'Galla Buck',
-                                'breed' => 'Galla',
-                                'location' => 'Machakos',
-                                'gender' => 'Male',
-                                'age' => '1 Year',
-                                'weight' => '50kg',
-                                'price' => 20000,
-                                'image' => 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=700&q=80'
-                            ],
-                            [
-                                'id' => 4,
-                                'name' => 'Saanen Female',
-                                'breed' => 'Saanen',
-                                'location' => 'Nyeri',
-                                'gender' => 'Female',
-                                'age' => '1 Year',
-                                'weight' => '38kg',
-                                'price' => 16500,
-                                'image' => 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=700&q=80'
-                            ],
-                            [
-                                'id' => 5,
-                                'name' => 'Premium Boer Buck',
-                                'breed' => 'Boer',
-                                'location' => 'Kajiado',
-                                'gender' => 'Male',
-                                'age' => '2 Years',
-                                'weight' => '65kg',
-                                'price' => 35000,
-                                'image' => 'https://images.unsplash.com/photo-1533318087102-b3ad366ed041?auto=format&fit=crop&w=700&q=80'
-                            ],
-                            [
-                                'id' => 6,
-                                'name' => 'Healthy Dairy Goat',
-                                'breed' => 'Alpine',
-                                'location' => 'Nairobi',
-                                'gender' => 'Female',
-                                'age' => '2 Years',
-                                'weight' => '42kg',
-                                'price' => 22000,
-                                'image' => 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=700&q=80'
-                            ]
-                        ];
-
-                    @endphp
-
-
-                    @foreach($goats as $goat)
+                    @forelse($goats as $goat)
 
                         <article class="card-hover bg-white rounded-xl overflow-hidden border">
 
                             <div class="relative h-52 overflow-hidden">
 
-                                <img
-                                    src="{{ $goat['image'] }}"
-                                    alt="{{ $goat['name'] }}"
-                                    class="goat-image w-full h-full object-cover"
-                                >
+                                @if($goat->primary_photo)
+                                    <img src="{{ asset('storage/'.$goat->primary_photo->path) }}" alt="{{ $goat->name ?? $goat->tag_number }}" class="goat-image w-full h-full object-cover">
+                                @else
+                                    <img src="https://images.unsplash.com/photo-1524024973431-2ad916746881?auto=format&fit=crop&w=700&q=80" alt="{{ $goat->name ?? $goat->tag_number }}" class="goat-image w-full h-full object-cover">
+                                @endif
 
                                 <span class="absolute top-3 left-3 bg-efarmer-600 text-white text-xs px-3 py-1.5 rounded-md font-bold">
                                     For Sale
@@ -288,39 +222,41 @@
                             <div class="p-5">
 
                                 <h3 class="font-bold text-lg">
-                                    {{ $goat['name'] }}
+                                    {{ $goat->name ?? $goat->tag_number }}
                                 </h3>
 
                                 <p class="text-sm text-gray-500 mt-2">
                                     <i class="fa-solid fa-location-dot text-efarmer-600"></i>
-                                    {{ $goat['location'] }}, Kenya
+                                    {{ $goat->location ?? 'Kenya' }}
                                 </p>
 
 
                                 <div class="flex flex-wrap gap-2 mt-3">
 
                                     <span class="bg-gray-100 px-2 py-1 text-xs rounded">
-                                        {{ $goat['breed'] }}
+                                        {{ $goat->breed->name ?? 'Unknown' }}
                                     </span>
 
                                     <span class="bg-gray-100 px-2 py-1 text-xs rounded">
-                                        {{ $goat['gender'] }}
+                                        {{ ucfirst($goat->gender) }}
                                     </span>
 
-                                    <span class="bg-gray-100 px-2 py-1 text-xs rounded">
-                                        {{ $goat['weight'] }}
-                                    </span>
+                                    @if($goat->weight)
+                                        <span class="bg-gray-100 px-2 py-1 text-xs rounded">
+                                            {{ $goat->weight }}kg
+                                        </span>
+                                    @endif
 
                                 </div>
 
 
                                 <div class="text-2xl font-extrabold text-efarmer-600 mt-4">
-                                    KSh {{ number_format($goat['price']) }}
+                                    KSh {{ number_format($goat->selling_price) }}
                                 </div>
 
 
                                 <a
-                                    href="{{ route('goats.show', $goat['id']) }}"
+                                    href="{{ route('goats.show', $goat) }}"
                                     class="block text-center mt-4 bg-efarmer-50 hover:bg-efarmer-100 text-efarmer-700 py-3 rounded-lg font-semibold"
                                 >
                                     View Details
@@ -330,8 +266,21 @@
 
                         </article>
 
-                    @endforeach
+                    @empty
 
+                        <div class="col-span-full text-center py-12">
+                            <i class="fa-solid fa-search text-4xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500">No goats found matching your criteria.</p>
+                            <a href="{{ route('goats.index') }}" class="text-efarmer-600 font-semibold mt-2 inline-block">Clear filters</a>
+                        </div>
+
+                    @endforelse
+
+                </div>
+
+                <!-- Pagination -->
+                <div class="mt-8">
+                    {{ $goats->links() }}
                 </div>
 
             </div>
