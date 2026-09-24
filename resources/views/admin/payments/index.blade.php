@@ -23,6 +23,7 @@
                     <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
                     <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>Failed</option>
+                    <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                 </select>
                 <button type="submit" class="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800">
                     <i class="fa-solid fa-search"></i> Search
@@ -51,7 +52,7 @@
                             <td class="px-6 py-4 font-semibold">KES {{ number_format($payment->amount, 2) }}</td>
                             <td class="px-6 py-4 font-mono text-sm">{{ $payment->transaction_id ?? 'Pending' }}</td>
                             <td class="px-6 py-4 text-center">
-                                <span class="px-2 py-1 rounded-full text-xs font-bold {{ $payment->status === 'completed' ? 'bg-green-100 text-green-700' : ($payment->status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700') }}">
+                                <span class="px-2 py-1 rounded-full text-xs font-bold {{ $payment->status === 'completed' ? 'bg-green-100 text-green-700' : ($payment->status === 'failed' ? 'bg-red-100 text-red-700' : ($payment->status === 'cancelled' ? 'bg-amber-100 text-amber-700' : 'bg-yellow-100 text-yellow-700')) }}">
                                     {{ ucfirst($payment->status) }}
                                 </span>
                             </td>

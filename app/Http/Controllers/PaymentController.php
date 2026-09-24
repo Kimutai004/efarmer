@@ -267,14 +267,21 @@ class PaymentController extends Controller
                 'customer_id' => $customer->id ?? null,
             ]);
         } else {
+            $reason = $stkCallback['ResultDesc'] ?? 'Unknown error';
+
+            // ResultCode 1032 = the customer cancelled the STK push prompt.
+            // Some gateways also report cancellation only in the description.
+            $cancelled = (string) $resultCode === '1032'
+                || stripos($reason, 'cancel') !== false;
+
             $payment->update([
-                'status' => 'failed',
-                'notes' => $payment->notes . ' | Failed: ' . ($stkCallback['ResultDesc'] ?? 'Unknown error'),
+                'status' => $cancelled ? 'cancelled' : 'failed',
+                'notes' => $payment->notes . ($cancelled ? ' | Cancelled: ' : ' | Failed: ') . $reason,
             ]);
 
-            Log::info('Payment failed', [
+            Log::info($cancelled ? 'Payment cancelled' : 'Payment failed', [
                 'reference' => $payment->payment_reference,
-                'reason' => $stkCallback['ResultDesc'] ?? 'Unknown',
+                'reason' => $reason,
             ]);
         }
 
@@ -302,11 +309,29 @@ class PaymentController extends Controller
             ]);
         }
 
-        return response()->json([
+        $payload = [
             'status' => $payment->status,
             'reference' => $payment->payment_reference,
             'amount' => $payment->amount,
-        ]);
+        ];
+
+        if (in_array($payment->status, ['cancelled', 'failed'], true)) {
+            $payload['reason'] = $this->failureReason($payment);
+        }
+
+        return response()->json($payload);
+    }
+
+    /**
+     * Extract the cancellation/failure reason stored by the M-Pesa callback.
+     */
+    protected function failureReason(Payment $payment): ?string
+    {
+        if (preg_match('/\|\s*(?:Cancelled|Failed):\s*(.+)$/i', (string) $payment->notes, $matches)) {
+            return trim($matches[1]);
+        }
+
+        return null;
     }
 
     public function receipt($reference)

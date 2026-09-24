@@ -47,16 +47,72 @@
 
             </div>
 
-            <div class="mt-8 rounded-2xl border border-clay-200 bg-clay-50 p-4">
+            <div class="mt-8 rounded-2xl border border-clay-200 bg-clay-50 p-4" id="statusBox">
 
-                <div class="flex items-center justify-center gap-2 text-sm font-bold text-clay-700">
-                    <i class="fa-solid fa-spinner fa-spin"></i>
-                    Waiting for payment confirmation…
+                <!-- Waiting -->
+                <div id="statusWaiting">
+                    <div class="flex items-center justify-center gap-2 text-sm font-bold text-clay-700">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        Waiting for payment confirmation…
+                    </div>
+
+                    <p class="text-xs text-clay-600/80 mt-2 text-center">
+                        This page updates automatically once M-Pesa confirms your payment.
+                    </p>
                 </div>
 
-                <p class="text-xs text-clay-600/80 mt-2">
-                    This page moves automatically once M-Pesa confirms your payment.
-                </p>
+                <!-- Success -->
+                <div id="statusSuccess" class="hidden">
+                    <div class="flex items-center justify-center gap-2 text-sm font-bold text-green-700">
+                        <i class="fa-solid fa-circle-check"></i>
+                        Payment processed successfully
+                    </div>
+
+                    <p class="text-xs text-green-700/80 mt-2 text-center">
+                        Your payment was confirmed by M-Pesa. Taking you to your receipt…
+                    </p>
+
+                    <a href="{{ route('payment.receipt', ['reference' => $reference]) }}" class="btn btn-primary w-full mt-4">
+                        <i class="fa-solid fa-receipt"></i> View receipt
+                    </a>
+                </div>
+
+                <!-- Cancelled -->
+                <div id="statusCancelled" class="hidden">
+                    <div class="flex items-center justify-center gap-2 text-sm font-bold text-amber-700">
+                        <i class="fa-solid fa-ban"></i>
+                        Transaction cancelled
+                    </div>
+
+                    <p class="text-xs text-amber-700/80 mt-2 text-center" id="cancelledReason">
+                        The M-Pesa prompt was cancelled before completion. No money was deducted.
+                    </p>
+
+                    <a href="{{ route('checkout', ['goat' => $goat]) }}" class="btn btn-primary w-full mt-4">
+                        <i class="fa-solid fa-rotate-right"></i> Try again
+                    </a>
+                </div>
+
+                <!-- Failed -->
+                <div id="statusFailed" class="hidden">
+                    <div class="flex items-center justify-center gap-2 text-sm font-bold text-red-700">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Payment not completed
+                    </div>
+
+                    <p class="text-xs text-red-700/80 mt-2 text-center" id="failedReason">
+                        Your payment could not be confirmed.
+                    </p>
+
+                    <div class="grid sm:grid-cols-2 gap-3 mt-4">
+                        <a href="{{ route('checkout', ['goat' => $goat]) }}" class="btn btn-primary">
+                            <i class="fa-solid fa-rotate-right"></i> Try again
+                        </a>
+                        <a href="{{ route('goats.index') }}" class="btn btn-outline">
+                            Back to goats
+                        </a>
+                    </div>
+                </div>
 
             </div>
 
@@ -76,6 +132,34 @@
 @push('scripts')
 <script>
     var reference = '{{ $reference }}';
+    var pollTimer = null;
+
+    function stopPolling() {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    }
+
+    function showStatus(state) {
+        ['statusWaiting', 'statusSuccess', 'statusCancelled', 'statusFailed'].forEach(function (id) {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById('status' + state.charAt(0).toUpperCase() + state.slice(1)).classList.remove('hidden');
+
+        var box = document.getElementById('statusBox');
+        box.classList.remove('border-clay-200', 'bg-clay-50', 'border-green-200', 'bg-green-50', 'border-amber-200', 'bg-amber-50', 'border-red-200', 'bg-red-50');
+
+        if (state === 'waiting') {
+            box.classList.add('border-clay-200', 'bg-clay-50');
+        } else if (state === 'success') {
+            box.classList.add('border-green-200', 'bg-green-50');
+        } else if (state === 'cancelled') {
+            box.classList.add('border-amber-200', 'bg-amber-50');
+        } else {
+            box.classList.add('border-red-200', 'bg-red-50');
+        }
+    }
 
     function checkPaymentStatus() {
         fetch('{{ route("payment.status") }}', {
@@ -89,15 +173,29 @@
         .then(function (response) { return response.json(); })
         .then(function (data) {
             if (data.status === 'completed') {
-                window.location.href = data.redirect || '/payment/receipt/' + encodeURIComponent(reference);
-            } else if (data.status === 'failed') {
-                clearInterval(pollTimer);
-                alert('Your payment could not be confirmed. Please try again or contact support with reference ' + reference);
+                stopPolling();
+                showStatus('success');
+                setTimeout(function () {
+                    window.location.href = data.redirect || '/payment/receipt/' + encodeURIComponent(reference);
+                }, 2500);
+            } else if (data.status === 'cancelled') {
+                stopPolling();
+                if (data.reason) {
+                    document.getElementById('cancelledReason').textContent =
+                        data.reason + '. No money was deducted.';
+                }
+                showStatus('cancelled');
+            } else if (data.status === 'failed' || data.status === 'not_found') {
+                stopPolling();
+                if (data.reason) {
+                    document.getElementById('failedReason').textContent = data.reason;
+                }
+                showStatus('failed');
             }
         })
         .catch(function (err) { console.error('Status check failed:', err); });
     }
 
-    var pollTimer = setInterval(checkPaymentStatus, 5000);
+    pollTimer = setInterval(checkPaymentStatus, 5000);
 </script>
 @endpush

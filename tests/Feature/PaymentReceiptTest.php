@@ -145,7 +145,7 @@ class PaymentReceiptTest extends TestCase
         });
     }
 
-    public function test_failed_callback_does_not_queue_receipt_email()
+    public function test_cancelled_callback_marks_payment_cancelled_without_receipt_email()
     {
         Mail::fake();
 
@@ -166,7 +166,60 @@ class PaymentReceiptTest extends TestCase
         $response->assertOk();
 
         $payment->refresh();
+        $this->assertSame('cancelled', $payment->status);
+        $this->assertStringContainsString('Cancelled: Request cancelled by user', $payment->notes);
+
+        Mail::assertNotQueued(PaymentReceiptMail::class);
+    }
+
+    public function test_status_endpoint_returns_cancelled_reason_for_pending_page()
+    {
+        $goat = $this->makeGoat();
+        $payment = $this->makePayment($goat);
+
+        $this->postJson('/api/mpesa/callback', [
+            'Body' => [
+                'stkCallback' => [
+                    'MerchantRequestID' => 'merchant-test',
+                    'CheckoutRequestID' => 'ws_CO_TEST_1',
+                    'ResultCode' => 1032,
+                    'ResultDesc' => 'Request cancelled by user',
+                ],
+            ],
+        ])->assertOk();
+
+        $response = $this->postJson(route('payment.status'), [
+            'reference' => $payment->payment_reference,
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('status', 'cancelled');
+        $response->assertJsonPath('reason', 'Request cancelled by user');
+    }
+
+    public function test_failed_callback_does_not_queue_receipt_email()
+    {
+        Mail::fake();
+
+        $goat = $this->makeGoat();
+        $payment = $this->makePayment($goat);
+
+        $response = $this->postJson('/api/mpesa/callback', [
+            'Body' => [
+                'stkCallback' => [
+                    'MerchantRequestID' => 'merchant-test',
+                    'CheckoutRequestID' => 'ws_CO_TEST_1',
+                    'ResultCode' => 1037,
+                    'ResultDesc' => 'Unable to lock subscriber, a transaction is already in process for the current subscriber',
+                ],
+            ],
+        ]);
+
+        $response->assertOk();
+
+        $payment->refresh();
         $this->assertSame('failed', $payment->status);
+        $this->assertStringContainsString('Failed: Unable to lock subscriber', $payment->notes);
 
         Mail::assertNotQueued(PaymentReceiptMail::class);
     }
