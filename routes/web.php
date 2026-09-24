@@ -90,7 +90,22 @@ Route::get('/goats', function () {
         $query->where('location', 'like', '%' . request('location') . '%');
     }
 
-    $goats = $query->latest()->paginate(12)->withQueryString();
+    /* Sorting (Newest / Price low-high / Price high-low) */
+    switch (request('sort')) {
+        case 'price_low':
+            $query->orderBy('selling_price')->orderByDesc('id');
+            break;
+
+        case 'price_high':
+            $query->orderByDesc('selling_price')->orderByDesc('id');
+            break;
+
+        default:
+            $query->latest();
+            break;
+    }
+
+    $goats = $query->paginate(12)->withQueryString();
 
     $breeds = \App\Models\Breed::where('status', 'active')
         ->orderBy('name')
@@ -116,13 +131,15 @@ Route::get('/goats/{goat}', function (\App\Models\Goat $goat) {
 
 /*
 |--------------------------------------------------------------------------
-| Seller
+| Seller Listings (retired)
 |--------------------------------------------------------------------------
+| Efarmer only sells its own goats now, so the public listing form is gone.
+| The old /sell-your-goat URL redirects permanently to the marketplace.
 */
 
 Route::get('/sell-your-goat', function () {
-    return view('seller.create');
-})->name('seller.create');
+    return redirect()->route('goats.index', [], 301);
+});
 
 
 /*

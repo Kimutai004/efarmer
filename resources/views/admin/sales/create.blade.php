@@ -359,13 +359,13 @@
 }
 
 .goat-card.selected {
-    border-color:#16a34a;
-    background:#f0fdf4;
+    border-color:#2c8748;
+    background:#f2faf3;
 }
 
 .goat-card.selected .check-icon {
-    background:#16a34a;
-    border-color:#16a34a;
+    background:#2c8748;
+    border-color:#2c8748;
 }
 
 .goat-card.selected .check-icon i {

@@ -1,92 +1,161 @@
-@include('partials.nav')
+@extends('layouts.app')
 
-<!DOCTYPE html>
-<html lang="en">
+@section('title', 'Efarmer | Buy Quality Goats in Kenya')
+@section('description', 'Buy healthy goats in Kenya with full health and weight records. Fair prices, M-Pesa payments and countrywide delivery.')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Efarmer | Buy & Sell Quality Goats</title>
-    <meta name="description" content="Efarmer is Kenya's trusted online marketplace for buying and selling quality goats.">
+@php
+    /* Local image helper – the uploaded farm photos live in /public/images */
+    $img = fn (string $file) => asset('images/' . str_replace(' ', '%20', $file));
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    $heroGoats = $img('WhatsApp Image 2026-08-27 at 13.11.41.jpeg');
+    $heroGoat = $img('WhatsApp Image 2026-08-27 at 13.12.18 (1).jpeg');
+    $herdImage = $img('WhatsApp Image 2026-08-27 at 13.12.15.jpeg');
+    $grazingImage = $img('WhatsApp Image 2026-08-27 at 13.12.19 (2).jpeg');
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { inter: ['Inter', 'sans-serif'] },
-                    colors: {
-                        efarmer: {
-                            50: '#f1f9f1', 100: '#dff0df', 200: '#bfe0bf', 300: '#8fc88f',
-                            400: '#5db35d', 500: '#319931', 600: '#218321', 700: '#196919',
-                            800: '#155415', 900: '#103f10', 950: '#072607'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    $breeds = \App\Models\Breed::where('status', 'active')->orderBy('name')->get();
+@endphp
 
-    <style>
-        * { scroll-behavior: smooth; }
-        body { font-family: 'Inter', sans-serif; }
-        .hero {
-            background-image: linear-gradient(90deg, rgba(0,0,0,.78), rgba(0,0,0,.50), rgba(0,0,0,.10)), url('https://images.unsplash.com/photo-1524024973431-2ad916746881?auto=format&fit=crop&w=2000&q=90');
-            background-size: cover;
-            background-position: center;
-        }
-        .goat-card { transition: all .3s ease; }
-        .goat-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,.12); }
-        .goat-card img { transition: transform .4s ease; }
-        .goat-card:hover img { transform: scale(1.06); }
-        .search-box { box-shadow: 0 12px 35px rgba(0,0,0,.12); }
-        .step-line { position: absolute; left: 15%; right: 15%; top: 30px; border-top: 2px dashed #a6d7a6; }
-        @media(max-width:768px) {
-            .hero { background-position: 65% center; }
-            .step-line { display: none; }
-        }
-    </style>
-</head>
+@section('content')
 
-<body class="bg-white text-gray-800">
-
+<!-- ========================================================= -->
 <!-- HERO -->
-<section class="hero relative min-h-[520px]">
-    <div class="max-w-7xl mx-auto px-5 lg:px-8">
-        <div class="min-h-[520px] flex items-center">
-            <div class="max-w-2xl text-white">
-                <h1 class="text-5xl md:text-6xl font-extrabold leading-tight">
-                    Buy & Sell<br>Quality Goats<br><span class="text-green-400">the Smart Way</span>
+<!-- ========================================================= -->
+
+<section class="relative bg-efarmer-950 text-white overflow-hidden">
+
+    <img
+        src="{{ $heroGoats }}"
+        alt="Quality goats for sale in Kenya"
+        class="absolute inset-0 w-full h-full object-cover opacity-60"
+    >
+
+    <div class="absolute inset-0 hero-overlay"></div>
+
+    <div class="relative max-w-7xl mx-auto px-5 lg:px-8 pt-16 pb-32 lg:pt-24 lg:pb-40">
+
+        <div class="grid lg:grid-cols-12 gap-14 items-center">
+
+            <div class="lg:col-span-7">
+
+                <span class="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-clay-300">
+                    <i class="fa-solid fa-certificate"></i>
+                    Kenya's goat marketplace
+                </span>
+
+                <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.05] mt-6">
+                    Buy healthy goats.<br>
+                    <span class="text-clay-400">Delivered to you.</span>
                 </h1>
-                <p class="mt-6 text-lg md:text-xl text-gray-100 max-w-xl leading-8">
-                    Efarmer connects farmers and buyers across Kenya. Find healthy goats, fair prices and trusted sellers.
+
+                <p class="mt-6 text-lg text-white/75 max-w-xl leading-8">
+                    Efarmer connects you directly with verified goat farmers across
+                    Kenya. Browse by breed, weight and county, pay securely with
+                    M-Pesa and get your livestock delivered.
                 </p>
-                <div class="flex flex-wrap gap-5 mt-8">
-                    <a href="{{ route('goats.index') }}" class="bg-efarmer-500 hover:bg-efarmer-400 px-7 py-3.5 rounded-lg font-bold flex items-center gap-3 transition">
-                        <i class="fa-solid fa-cow"></i> Browse Goats
+
+                <div class="flex flex-wrap gap-4 mt-9">
+
+                    <a href="{{ route('goats.index') }}" class="btn btn-lg btn-accent">
+                        <i class="fa-solid fa-cow"></i>
+                        Browse Goats
                     </a>
+
+                    <a href="{{ route('how-it-works') }}" class="btn btn-lg btn-white">
+                        <i class="fa-solid fa-circle-question"></i>
+                        How it works
+                    </a>
+
                 </div>
+
+                <div class="grid grid-cols-3 gap-6 mt-12 max-w-lg">
+
+                    <div>
+                        <p class="font-display text-3xl font-extrabold text-white">1,000+</p>
+                        <p class="text-xs uppercase tracking-wider text-white/50 mt-1">Farmers</p>
+                    </div>
+
+                    <div class="border-x border-white/10 px-6">
+                        <p class="font-display text-3xl font-extrabold text-white">5,000+</p>
+                        <p class="text-xs uppercase tracking-wider text-white/50 mt-1">Goats listed</p>
+                    </div>
+
+                    <div>
+                        <p class="font-display text-3xl font-extrabold text-white">47</p>
+                        <p class="text-xs uppercase tracking-wider text-white/50 mt-1">Counties</p>
+                    </div>
+
+                </div>
+
             </div>
+
+            <div class="lg:col-span-5 hidden lg:block">
+
+                <div class="relative">
+
+                    <div class="rounded-4xl overflow-hidden border-4 border-white/10 shadow-card">
+                        <img src="{{ $heroGoat }}" alt="A healthy goat listed on Efarmer" class="w-full h-[440px] object-cover">
+                    </div>
+
+                    <div class="absolute -left-8 bottom-10 card-soft p-4 w-56">
+                        <div class="flex items-center gap-3">
+                            <span class="w-11 h-11 rounded-2xl bg-efarmer-100 text-efarmer-700 flex items-center justify-center">
+                                <i class="fa-solid fa-shield-heart text-lg"></i>
+                            </span>
+
+                            <div>
+                                <p class="font-bold text-efarmer-900 text-sm">Health checked</p>
+                                <p class="text-xs text-gray-500">Vet records included</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="absolute -right-6 top-8 card-soft px-5 py-3">
+                        <p class="text-xs uppercase tracking-wider text-gray-400 font-bold">From</p>
+                        <p class="font-display text-xl font-extrabold text-efarmer-800">KSh 8,500</p>
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
+
     </div>
 
-    <!-- SEARCH BOX -->
-    <div class="absolute left-0 right-0 -bottom-9">
-        <div class="max-w-6xl mx-auto px-5">
-            <form action="{{ route('goats.index') }}" method="GET" class="search-box bg-white rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                <select name="breed_id" class="border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-efarmer-400">
-                    <option value="">All Breeds</option>
-                    @foreach(\App\Models\Breed::where('status', 'active')->orderBy('name')->get() as $breed)
+</section>
+
+<!-- ========================================================= -->
+<!-- SEARCH BAR -->
+<!-- ========================================================= -->
+
+<section class="relative -mt-20 z-10">
+
+    <div class="max-w-6xl mx-auto px-5">
+
+        <form
+            action="{{ route('goats.index') }}"
+            method="GET"
+            class="card-soft p-4 lg:p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"
+        >
+
+            <label>
+                <span class="field-label">Breed</span>
+
+                <select name="breed_id">
+                    <option value="">All breeds</option>
+
+                    @foreach($breeds as $breed)
                         <option value="{{ $breed->id }}">{{ $breed->name }}</option>
                     @endforeach
+
                 </select>
-                <select name="location" class="border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-efarmer-400">
-                    <option value="">All Locations</option>
+            </label>
+
+            <label>
+                <span class="field-label">County</span>
+
+                <select name="location">
+                    <option value="">All counties</option>
                     <option>Nairobi</option>
                     <option>Nakuru</option>
                     <option>Kiambu</option>
@@ -94,196 +163,501 @@
                     <option>Nyeri</option>
                     <option>Kajiado</option>
                 </select>
-                <select name="gender" class="border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-efarmer-400">
-                    <option value="">All Genders</option>
+            </label>
+
+            <label>
+                <span class="field-label">Gender</span>
+
+                <select name="gender">
+                    <option value="">Any gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                 </select>
-                <select name="max_price" class="border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-efarmer-400">
-                    <option value="">Max Price</option>
-                    <option value="10000">KSh 10,000</option>
-                    <option value="20000">KSh 20,000</option>
-                    <option value="50000">KSh 50,000</option>
-                    <option value="100000">KSh 100,000</option>
+            </label>
+
+            <label>
+                <span class="field-label">Budget</span>
+
+                <select name="max_price">
+                    <option value="">Any price</option>
+                    <option value="10000">Up to KSh 10,000</option>
+                    <option value="20000">Up to KSh 20,000</option>
+                    <option value="50000">Up to KSh 50,000</option>
+                    <option value="100000">Up to KSh 100,000</option>
                 </select>
-                <button type="submit" class="bg-efarmer-600 hover:bg-efarmer-700 text-white rounded-lg font-bold flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-magnifying-glass"></i> Search Goats
+            </label>
+
+            <div class="flex items-end">
+                <button type="submit" class="btn btn-primary w-full h-[46px]">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    Search Goats
                 </button>
-            </form>
-        </div>
+            </div>
+
+        </form>
+
     </div>
+
 </section>
 
+
+<!-- ========================================================= -->
 <!-- TRUST FEATURES -->
-<section class="pt-24 pb-12 bg-gray-50">
+<!-- ========================================================= -->
+
+<section class="pt-16 pb-8">
+
     <div class="max-w-7xl mx-auto px-5 lg:px-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div class="flex items-center gap-4">
-                <div class="rounded-full flex items-center justify-center text-efarmer-600 text-xl">
-                    <i class="fa-solid fa-shield-halved"></i>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+            @foreach([
+                ['icon' => 'fa-shield-halved', 'title' => 'Verified goats', 'text' => 'Every goat is vetted before it goes live.'],
+                ['icon' => 'fa-heart-pulse', 'title' => 'Healthy livestock', 'text' => 'Health and vaccination records on each goat.'],
+                ['icon' => 'fa-mobile-screen', 'title' => 'M-Pesa payments', 'text' => 'Pay safely from your phone in seconds.'],
+                ['icon' => 'fa-truck-fast', 'title' => 'Countrywide delivery', 'text' => 'Safe transport to any county in Kenya.'],
+            ] as $feature)
+
+                <div class="card-soft lift p-6 flex items-start gap-4" data-reveal>
+
+                    <span class="w-12 h-12 rounded-2xl bg-efarmer-100 text-efarmer-700 flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid {{ $feature['icon'] }}"></i>
+                    </span>
+
+                    <div>
+                        <h3 class="font-bold text-efarmer-900">{{ $feature['title'] }}</h3>
+                        <p class="text-sm text-gray-500 mt-1.5 leading-6">{{ $feature['text'] }}</p>
+                    </div>
+
                 </div>
-                <div>
-                    <h3 class="font-bold text-lg">Verified Sellers</h3>
-                    <p class="text-sm text-gray-500 mt-1">All sellers are verified for your safety</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="rounded-full flex items-center justify-center text-efarmer-600 text-xl">
-                    <i class="fa-solid fa-heart-pulse"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg">Healthy Goats</h3>
-                    <p class="text-sm text-gray-500 mt-1">Health checked & vaccination ready</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="rounded-full flex items-center justify-center text-efarmer-600 text-xl">
-                    <i class="fa-solid fa-truck"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg">Safe Delivery</h3>
-                    <p class="text-sm text-gray-500 mt-1">We deliver your goat safely</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="rounded-full flex items-center justify-center text-efarmer-600 text-xl">
-                    <i class="fa-solid fa-tag"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg">Fair Prices</h3>
-                    <p class="text-sm text-gray-500 mt-1">Transparent pricing, no hidden fees</p>
-                </div>
-            </div>
+
+            @endforeach
+
         </div>
-    </div>
-</section>
 
+    </div>
+
+</section>
+<!-- ========================================================= -->
 <!-- FEATURED GOATS -->
-<section id="goats" class="py-20 bg-white">
+<!-- ========================================================= -->
+
+<section class="py-16">
+
     <div class="max-w-7xl mx-auto px-5 lg:px-8">
 
-        <div class="flex items-center justify-between mb-10">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-5 mb-10">
+
             <div>
-                <h2 class="text-3xl font-extrabold text-efarmer-900">Featured Goats</h2>
-                <div class="w-12 h-1 bg-efarmer-500 mt-3"></div>
+                <span class="eyebrow">Handpicked listings</span>
+
+                <h2 class="font-display text-3xl md:text-4xl font-extrabold text-efarmer-900 mt-3">
+                    Featured Goats
+                </h2>
+
+                <div class="divider-line mt-4"></div>
             </div>
-            <a href="{{ route('goats.index') }}" class="hidden sm:flex items-center gap-2 text-efarmer-700 font-semibold">
-                View All Goats <i class="fa-solid fa-arrow-right"></i>
+
+            <a href="{{ route('goats.index') }}" class="btn btn-outline">
+                View all goats
+                <i class="fa-solid fa-arrow-right"></i>
             </a>
+
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
             @forelse($featuredGoats as $goat)
-                <article class="goat-card bg-white border rounded-xl overflow-hidden">
-                    <div class="relative overflow-hidden h-56">
+
+                {{-- The whole card links to the goat details page --}}
+                <a
+                    href="{{ route('goats.show', $goat) }}"
+                    class="group card-soft zoom lift overflow-hidden flex flex-col"
+                    data-reveal
+                >
+
+                    <div class="relative h-56 overflow-hidden">
+
                         @if($goat->primary_photo)
-                            <img src="{{ asset('storage/'.$goat->primary_photo->path) }}" class="w-full h-full object-cover" alt="{{ $goat->name ?? $goat->tag_number }}">
+                            <img
+                                src="{{ asset('storage/'.$goat->primary_photo->path) }}"
+                                alt="{{ $goat->name ?? $goat->tag_number }}"
+                                class="w-full h-full object-cover"
+                            >
                         @else
-                            <img src="https://images.unsplash.com/photo-1524024973431-2ad916746881?auto=format&fit=crop&w=700&q=80" class="w-full h-full object-cover" alt="{{ $goat->name ?? $goat->tag_number }}">
+                            <img
+                                src="{{ $herdImage }}"
+                                alt="{{ $goat->name ?? $goat->tag_number }}"
+                                class="w-full h-full object-cover"
+                            >
                         @endif
-                        <span class="absolute top-3 left-3 bg-efarmer-600 text-white text-xs px-3 py-1.5 rounded-md font-bold">For Sale</span>
+
+                        <span class="absolute top-3 left-3 rounded-full bg-efarmer-600/95 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white">
+                            For sale
+                        </span>
+
+                        @if($goat->featured)
+                            <span class="absolute top-3 right-3 rounded-full bg-clay-500/95 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white">
+                                <i class="fa-solid fa-star"></i> Featured
+                            </span>
+                        @endif
+
                     </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg">{{ $goat->name ?? $goat->tag_number }}</h3>
-                        <p class="text-gray-500 text-sm mt-2">
-                            <i class="fa-solid fa-location-dot text-efarmer-600"></i>
+
+                    <div class="p-5 flex flex-col flex-1">
+
+                        <div class="flex items-start justify-between gap-3">
+
+                            <h3 class="font-bold text-lg text-efarmer-900 leading-snug">
+                                {{ $goat->name ?? $goat->tag_number }}
+                            </h3>
+
+                            @if($goat->breed)
+                                <span class="chip whitespace-nowrap">{{ $goat->breed->name }}</span>
+                            @endif
+
+                        </div>
+
+                        <p class="text-sm text-gray-500 mt-2">
+                            <i class="fa-solid fa-location-dot text-clay-500"></i>
                             {{ $goat->location ?? 'Kenya' }}
                         </p>
-                        <div class="flex gap-2 mt-3 flex-wrap">
-                            <span class="bg-gray-100 px-2.5 py-1 rounded text-xs">{{ ucfirst($goat->gender) }}</span>
+
+                        <div class="flex flex-wrap gap-2 mt-3 text-xs text-gray-500">
+
+                            <span class="rounded-full bg-gray-50 border border-efarmer-100 px-2.5 py-1">
+                                <i class="fa-solid fa-venus-mars"></i> {{ ucfirst($goat->gender) }}
+                            </span>
+
                             @if($goat->weight)
-                                <span class="bg-gray-100 px-2.5 py-1 rounded text-xs">{{ $goat->weight }}kg</span>
+                                <span class="rounded-full bg-gray-50 border border-efarmer-100 px-2.5 py-1">
+                                    <i class="fa-solid fa-weight-hanging"></i> {{ $goat->weight }} kg
+                                </span>
                             @endif
-                            @if($goat->breed)
-                                <span class="bg-gray-100 px-2.5 py-1 rounded text-xs">{{ $goat->breed->name }}</span>
-                            @endif
+
                         </div>
-                        <div class="mt-4 text-2xl font-extrabold text-efarmer-600">
-                            KSh {{ number_format($goat->selling_price) }}
+
+                        <div class="mt-auto pt-5 mt-5 flex items-center justify-between border-t border-efarmer-50">
+
+                            <span class="font-display text-xl font-extrabold text-efarmer-800">
+                                KSh {{ number_format($goat->selling_price) }}
+                            </span>
+
+                            <span class="w-9 h-9 rounded-full bg-efarmer-50 text-efarmer-700 flex items-center justify-center transition group-hover:bg-efarmer-600 group-hover:text-white">
+                                <i class="fa-solid fa-arrow-right text-sm"></i>
+                            </span>
+
                         </div>
-                        <a href="{{ route('goats.show', $goat) }}" class="mt-4 bg-efarmer-50 hover:bg-efarmer-100 text-efarmer-700 py-3 rounded-lg flex items-center justify-center gap-2 font-semibold">
-                            <i class="fa-solid fa-eye"></i> View Details
-                        </a>
+
                     </div>
-                </article>
+
+                </a>
+
             @empty
-                <div class="col-span-full text-center py-12 text-gray-500">
-                    <i class="fa-solid fa-cow text-4xl mb-4 text-gray-300"></i>
-                    <p>No goats available at the moment. Check back soon!</p>
+
+                <div class="col-span-full card-soft p-12 text-center">
+                    <i class="fa-solid fa-cow text-4xl text-efarmer-300"></i>
+                    <p class="text-gray-500 mt-4">No goats are listed right now. Please check back shortly.</p>
                 </div>
+
             @endforelse
 
         </div>
 
     </div>
-</section>
 
+</section>
+<!-- ========================================================= -->
 <!-- HOW IT WORKS -->
-<section id="how-it-works" class="py-20 bg-efarmer-50">
+<!-- ========================================================= -->
+
+<section class="py-20 bg-efarmer-50/60">
+
     <div class="max-w-7xl mx-auto px-5 lg:px-8">
-        <div class="text-center mb-14">
-            <h2 class="text-3xl md:text-4xl font-extrabold text-efarmer-900">How It Works</h2>
-            <div class="w-12 h-1 bg-efarmer-500 mx-auto mt-3"></div>
-        </div>
-        <div class="relative">
-            <div class="step-line"></div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 relative">
-                <div class="text-center">
-                    <div class="relative z-10 mx-auto w-16 h-16 bg-white border-2 border-efarmer-400 rounded-full flex items-center justify-center text-efarmer-600 text-2xl">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                    </div>
-                    <h3 class="font-bold text-lg mt-5">1. Search</h3>
-                    <p class="text-gray-500 mt-2">Browse goats by location, breed, gender or price.</p>
-                </div>
-                <div class="text-center">
-                    <div class="relative z-10 mx-auto w-16 h-16 bg-white border-2 border-efarmer-400 rounded-full flex items-center justify-center text-efarmer-600 text-2xl">
-                        <i class="fa-solid fa-comment-dots"></i>
-                    </div>
-                    <h3 class="font-bold text-lg mt-5">2. Contact Seller</h3>
-                    <p class="text-gray-500 mt-2">Chat or call the seller to ask questions.</p>
-                </div>
-                <div class="text-center">
-                    <div class="relative z-10 mx-auto w-16 h-16 bg-white border-2 border-efarmer-400 rounded-full flex items-center justify-center text-efarmer-600 text-2xl">
-                        <i class="fa-solid fa-handshake"></i>
-                    </div>
-                    <h3 class="font-bold text-lg mt-5">3. Agree & Pay</h3>
-                    <p class="text-gray-500 mt-2">Agree on price and complete payment via M-Pesa.</p>
-                </div>
-                <div class="text-center">
-                    <div class="relative z-10 mx-auto w-16 h-16 bg-white border-2 border-efarmer-400 rounded-full flex items-center justify-center text-efarmer-600 text-2xl">
-                        <i class="fa-solid fa-truck"></i>
-                    </div>
-                    <h3 class="font-bold text-lg mt-5">4. Delivery</h3>
-                    <p class="text-gray-500 mt-2">Get your goat delivered safely to you.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
 
-<!-- SELL CTA -->
-<section id="sell" class="py-20 bg-white">
-    <div class="max-w-6xl mx-auto px-5">
-        <div class="bg-efarmer-800 rounded-2xl overflow-hidden">
-            <div class="grid md:grid-cols-2">
-                <div class="p-10 md:p-14 text-white">
-                    <span class="text-green-300 font-semibold">FOR FARMERS</span>
-                    <h2 class="text-3xl md:text-4xl font-extrabold mt-3">Have goats to sell?</h2>
-                    <p class="mt-5 text-green-50 leading-7">
-                        Reach thousands of potential buyers across Kenya and sell your goats at a fair market price.
+        <div class="text-center max-w-2xl mx-auto mb-14">
+
+            <span class="eyebrow justify-center">Simple &amp; transparent</span>
+
+            <h2 class="font-display text-3xl md:text-4xl font-extrabold text-efarmer-900 mt-3">
+                How Efarmer Works
+            </h2>
+
+            <p class="text-gray-500 mt-4">
+                From browsing to delivery, buying a goat takes four simple steps.
+            </p>
+
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            @foreach([
+                ['icon' => 'fa-magnifying-glass', 'title' => 'Search', 'text' => 'Browse goats by breed, county, gender, weight and price.'],
+                ['icon' => 'fa-comments', 'title' => 'Ask questions', 'text' => 'Check health records and talk to the farmer about the goat.'],
+                ['icon' => 'fa-mobile-screen-button', 'title' => 'Pay with M-Pesa', 'text' => 'Confirm your order and pay securely from your phone.'],
+                ['icon' => 'fa-truck-fast', 'title' => 'Get delivery', 'text' => 'We arrange safe transport to your farm or nearest town.'],
+            ] as $index => $step)
+
+                <div class="relative card-soft lift p-7" data-reveal>
+
+                    <span class="absolute -top-4 right-6 font-display text-5xl font-extrabold text-efarmer-100">
+                        {{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}
+                    </span>
+
+                    <span class="w-14 h-14 rounded-2xl bg-efarmer-600 text-white flex items-center justify-center text-xl relative">
+                        <i class="fa-solid {{ $step['icon'] }}"></i>
+                    </span>
+
+                    <h3 class="font-bold text-lg text-efarmer-900 mt-6">
+                        {{ $step['title'] }}
+                    </h3>
+
+                    <p class="text-gray-500 mt-3 leading-7 text-sm">
+                        {{ $step['text'] }}
                     </p>
-                    <a href="{{ route('seller.create') }}" class="inline-flex items-center gap-3 mt-8 bg-white text-efarmer-800 px-7 py-3.5 rounded-lg font-bold hover:bg-green-50">
-                        List Your Goat <i class="fa-solid fa-arrow-right"></i>
-                    </a>
+
                 </div>
-                <div class="min-h-[320px] bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1524024973431-2ad916746881?auto=format&fit=crop&w=1000&q=80');"></div>
-            </div>
+
+            @endforeach
+
         </div>
+
+        <div class="text-center mt-12">
+
+            <a href="{{ route('how-it-works') }}" class="btn btn-dark btn-lg">
+                Learn more about the process
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+
+        </div>
+
     </div>
+
+</section>
+<!-- ========================================================= -->
+<!-- BROWSE BY BREED -->
+<!-- ========================================================= -->
+
+@if($breeds->count())
+
+    <section class="py-16">
+
+        <div class="max-w-7xl mx-auto px-5 lg:px-8">
+
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-5 mb-8">
+
+                <div>
+                    <span class="eyebrow">Find your match</span>
+
+                    <h2 class="font-display text-3xl font-extrabold text-efarmer-900 mt-3">
+                        Browse by breed
+                    </h2>
+                </div>
+
+                <p class="text-gray-500 text-sm sm:text-right max-w-xs">
+                    Filter the marketplace by the breed that suits your farm and market.
+                </p>
+
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+
+                @foreach($breeds as $breed)
+
+                    <a
+                        href="{{ route('goats.index', ['breed_id' => $breed->id]) }}"
+                        class="group inline-flex items-center gap-2 rounded-2xl border border-efarmer-100 bg-white px-5 py-3 font-semibold text-efarmer-800 hover:border-efarmer-400 hover:bg-efarmer-50 transition"
+                    >
+                        <i class="fa-solid fa-dna text-clay-500"></i>
+                        {{ $breed->name }}
+                        <i class="fa-solid fa-arrow-right text-xs opacity-0 group-hover:opacity-100 transition"></i>
+                    </a>
+
+                @endforeach
+
+            </div>
+
+        </div>
+
+    </section>
+
+@endif
+
+
+<!-- ========================================================= -->
+<!-- SELL CTA -->
+<!-- ========================================================= -->
+
+<section class="pb-20">
+
+    <div class="max-w-7xl mx-auto px-5 lg:px-8">
+
+        <div class="relative overflow-hidden rounded-4xl bg-efarmer-900 text-white">
+
+            <div class="grid lg:grid-cols-2 items-stretch">
+
+                <div class="p-9 sm:p-12 lg:p-16 relative">
+
+                    <div class="absolute inset-0 noise-dots opacity-30"></div>
+
+                    <div class="relative">
+
+                        <span class="eyebrow !text-clay-300">For buyers</span>
+
+                        <h2 class="font-display text-3xl md:text-4xl font-extrabold mt-4 leading-tight">
+                            Looking for your next goat?<br>
+                            Delivered to all 47 counties.
+                        </h2>
+
+                        <p class="mt-5 text-white/70 leading-8">
+                            Every goat is raised, vet-checked and listed by the Efarmer
+                            team with real photos, weight and health records — so you
+                            know exactly what you are paying for.
+                        </p>
+
+                        <ul class="mt-7 space-y-3 text-white/80 text-sm">
+
+                            <li class="flex items-center gap-3">
+                                <i class="fa-solid fa-circle-check text-clay-400"></i>
+                                Full health, weight and breed records on every goat
+                            </li>
+
+                            <li class="flex items-center gap-3">
+                                <i class="fa-solid fa-circle-check text-clay-400"></i>
+                                Buyers pay securely through M-Pesa
+                            </li>
+
+                            <li class="flex items-center gap-3">
+                                <i class="fa-solid fa-circle-check text-clay-400"></i>
+                                Delivery arranged after every order
+                            </li>
+
+                        </ul>
+
+                        <div class="flex flex-wrap gap-4 mt-9">
+
+                            <a href="{{ route('goats.index') }}" class="btn btn-lg btn-accent">
+                                <i class="fa-solid fa-cow"></i>
+                                Browse Goats
+                            </a>
+
+                            <a href="{{ route('how-it-works') }}" class="btn btn-lg btn-white">
+                                See how it works
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="relative min-h-[320px]">
+
+                    <img
+                        src="{{ $herdImage }}"
+                        alt="Farmer herding goats in Kenya"
+                        class="absolute inset-0 w-full h-full object-cover"
+                    >
+
+                    <div class="absolute inset-0 bg-gradient-to-r from-efarmer-900 via-efarmer-900/40 to-transparent"></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ========================================================= -->
+<!-- FROM THE BLOG -->
+<!-- ========================================================= -->
+
+@php $homePosts = collect(config('blog.posts'))->take(3); @endphp
+
+<section class="pb-24">
+
+    <div class="max-w-7xl mx-auto px-5 lg:px-8">
+
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-5 mb-10">
+
+            <div>
+                <span class="eyebrow">Farming knowledge</span>
+
+                <h2 class="font-display text-3xl md:text-4xl font-extrabold text-efarmer-900 mt-3">
+                    Goat farming guides
+                </h2>
+
+                <div class="divider-line mt-4"></div>
+            </div>
+
+            <a href="{{ route('blog.index') }}" class="btn btn-outline">
+                Visit the blog
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            @foreach($homePosts as $slug => $post)
+
+                <a
+                    href="{{ route('blog.show', $slug) }}"
+                    class="group card-soft zoom lift overflow-hidden flex flex-col"
+                    data-reveal
+                >
+
+                    <div class="relative h-52 overflow-hidden">
+
+                        <img
+                            src="{{ $img($post['image']) }}"
+                            alt="{{ $post['title'] }}"
+                            class="w-full h-full object-cover"
+                        >
+
+                        <span class="absolute top-4 left-4 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-efarmer-800">
+                            {{ $post['category'] }}
+                        </span>
+
+                    </div>
+
+                    <div class="p-6 flex flex-col flex-1">
+
+                        <div class="flex items-center gap-3 text-xs text-gray-400 font-semibold">
+
+                            <span><i class="fa-regular fa-calendar"></i> {{ $post['date'] }}</span>
+
+                            <span class="w-1 h-1 rounded-full bg-gray-300"></span>
+
+                            <span><i class="fa-regular fa-clock"></i> {{ $post['read_time'] }}</span>
+
+                        </div>
+
+                        <h3 class="font-bold text-lg text-efarmer-900 mt-3 leading-snug group-hover:text-efarmer-600 transition">
+                            {{ $post['title'] }}
+                        </h3>
+
+                        <p class="text-sm text-gray-500 mt-3 leading-7">
+                            {{ Str::limit($post['excerpt'], 110) }}
+                        </p>
+
+                        <span class="mt-auto pt-5 flex items-center gap-2 text-sm font-bold text-clay-600">
+                            Read article
+                            <i class="fa-solid fa-arrow-right text-xs transition group-hover:translate-x-1"></i>
+                        </span>
+
+                    </div>
+
+                </a>
+
+            @endforeach
+
+        </div>
+
+    </div>
+
 </section>
 
-@include('partials.footer')
-
-</body>
-</html>
+@endsection

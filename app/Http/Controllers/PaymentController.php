@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PaymentReceiptMail;
 use App\Models\Customer;
 use App\Models\Goat;
 use App\Models\Payment;
@@ -11,6 +12,7 @@ use App\Services\MpesaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class PaymentController extends Controller
@@ -43,7 +45,7 @@ class PaymentController extends Controller
             'quantity' => 'required|integer|min:1|max:10',
             'phone' => 'required|string|max:15',
             'name' => 'required|string|max:150',
-            'email' => 'nullable|email',
+            'email' => 'required|email|max:255',
             'delivery_address' => 'required|string|max:500',
             'delivery_town' => 'required|string|max:100',
             'delivery_notes' => 'nullable|string|max:300',
@@ -76,6 +78,7 @@ class PaymentController extends Controller
                 'amount' => $totalAmount,
                 'payment_method' => 'mpesa',
                 'phone_number' => $data['phone'],
+                'email' => $data['email'],
                 'status' => 'pending',
                 'notes' => sprintf(
                     'Buyer: %s | Goat: %s | Qty: %d | Delivery: %s, %s | Transport: KES %s (KES %s × %d)',
@@ -191,10 +194,14 @@ class PaymentController extends Controller
                 ['phone' => $payment->phone_number],
                 [
                     'name' => $buyerName,
-                    'email' => null,
+                    'email' => $payment->email,
                     'location' => 'Kenya',
                 ]
             );
+
+            if (! $customer->email && $payment->email) {
+                $customer->update(['email' => $payment->email]);
+            }
 
             // Create sale record
             if ($goat) {
@@ -238,6 +245,20 @@ class PaymentController extends Controller
                         'sold_at' => now(),
                     ]);
                 });
+            }
+
+            // Email the buyer their receipt. A mail failure must never
+            // break the M-Pesa callback response, so it's logged instead.
+            if ($payment->email) {
+                try {
+                    Mail::to($payment->email)->queue(new PaymentReceiptMail($payment));
+                } catch (\Throwable $e) {
+                    Log::warning('Payment receipt email failed', [
+                        'reference' => $payment->payment_reference,
+                        'email' => $payment->email,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             Log::info('Payment completed', [

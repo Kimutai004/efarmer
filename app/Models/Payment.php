@@ -16,6 +16,7 @@ class Payment extends Model
         'payment_method',
         'transaction_id',
         'phone_number',
+        'email',
         'status',
         'payment_date',
         'notes',
