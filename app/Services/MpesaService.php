@@ -4,44 +4,48 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class MpesaService
 {
     protected $consumerKey;
     protected $consumerSecret;
-    protected $passkey;
-    protected $shortcode;
     protected $baseUrl;
     protected $callbackUrl;
-    protected $env;
+    protected $accountReference;
+    protected $routeCode;
+    protected $operation;
+    protected $orgShortCode;
+    protected $orgPassKey;
 
     public function __construct()
     {
         $this->consumerKey = config('mpesa.consumer_key');
         $this->consumerSecret = config('mpesa.consumer_secret');
-        $this->passkey = config('mpesa.passkey');
-        $this->shortcode = config('mpesa.shortcode');
-        $this->env = config('mpesa.env', 'sandbox');
+        $this->accountReference = config('mpesa.account_reference');
         $this->callbackUrl = config('mpesa.callback_url');
-
-        $this->baseUrl = $this->env === 'production'
-            ? 'https://api.safaricom.co.ke'
-            : 'https://sandbox.safaricom.co.ke';
+        $this->baseUrl = rtrim(config('mpesa.base_url'), '/');
+        $this->routeCode = config('mpesa.route_code');
+        $this->operation = config('mpesa.operation');
+        $this->orgShortCode = config('mpesa.org_shortcode');
+        $this->orgPassKey = config('mpesa.org_passkey');
     }
 
     public function getAccessToken(): ?string
     {
         $credentials = base64_encode($this->consumerKey . ':' . $this->consumerSecret);
 
-        $response = Http::withHeaders([
+        $response = Http::asForm()->withHeaders([
             'Authorization' => 'Basic ' . $credentials,
-        ])->get($this->baseUrl . '/oauth/v1/generate?grant_type=client_credentials');
+        ])->post($this->baseUrl . '/token?grant_type=client_credentials', [
+            'grant_type' => 'client_credentials',
+        ]);
 
         if ($response->successful()) {
             return $response->json('access_token');
         }
 
-        Log::error('M-Pesa token generation failed', [
+        Log::error('KCB Buni token generation failed', [
             'response' => $response->json(),
         ]);
 
@@ -50,6 +54,15 @@ class MpesaService
 
     public function stkPush(string $phone, float $amount, string $reference, string $description = 'Payment'): array
     {
+        if (blank($this->accountReference)) {
+            Log::error('KCB Buni STK Push cannot start without an account reference.');
+
+            return [
+                'success' => false,
+                'message' => 'Payment is not configured. Please contact support.',
+            ];
+        }
+
         $token = $this->getAccessToken();
 
         if (!$token) {
@@ -59,70 +72,45 @@ class MpesaService
             ];
         }
 
-        $timestamp = now()->format('YmdHis');
-        $password = base64_encode($this->shortcode . $this->passkey . $timestamp);
-
         $payload = [
-            'BusinessShortCode' => $this->shortcode,
-            'Password' => $password,
-            'Timestamp' => $timestamp,
-            'TransactionType' => 'CustomerPayBillOnline',
-            'Amount' => (int) round($amount),
-            'PartyA' => $this->formatPhone($phone),
-            'PartyB' => $this->shortcode,
-            'PhoneNumber' => $this->formatPhone($phone),
-            'CallBackURL' => $this->callbackUrl,
-            'AccountReference' => $reference,
-            'TransactionDesc' => $description,
+            'phoneNumber' => $this->formatPhone($phone),
+            'amount' => (string) (int) round($amount),
+            'invoiceNumber' => '522533-' . $this->accountReference . '-' . $reference,
+            'sharedShortCode' => true,
+            'orgShortCode' => $this->orgShortCode,
+            'orgPassKey' => $this->orgPassKey,
+            'callbackUrl' => $this->callbackUrl,
+            'transactionDescription' => substr($description, 0, 30),
         ];
 
-        $response = Http::withToken($token)
-            ->post($this->baseUrl . '/mpesa/stkpush/v1/processrequest', $payload);
+        $response = Http::withToken($token)->withHeaders([
+            'routeCode' => $this->routeCode,
+            'operation' => $this->operation,
+            'messageId' => (string) Str::uuid(),
+        ])
+            ->post($this->baseUrl . '/mm/api/request/1.0.0/stkpush', $payload);
 
         $result = $response->json();
+        $gatewayResponse = $result['response'] ?? [];
 
-        Log::info('M-Pesa STK Push', [
+        Log::info('KCB Buni M-Pesa STK Push', [
             'payload' => $payload,
             'response' => $result,
         ]);
 
-        if ($response->successful() && isset($result['ResponseCode']) && $result['ResponseCode'] == '0') {
+        if ($response->successful() && ($result['header']['statusCode'] ?? null) === '0' && ($gatewayResponse['ResponseCode'] ?? null) === '0') {
             return [
                 'success' => true,
-                'checkout_request_id' => $result['CheckoutRequestID'] ?? null,
-                'merchant_request_id' => $result['MerchantRequestID'] ?? null,
-                'message' => $result['CustomerMessage'] ?? 'Enter your M-Pesa PIN to complete payment.',
+                'checkout_request_id' => $gatewayResponse['CheckoutRequestID'] ?? null,
+                'merchant_request_id' => $gatewayResponse['MerchantRequestID'] ?? null,
+                'message' => $gatewayResponse['CustomerMessage'] ?? 'Enter your M-Pesa PIN to complete payment.',
             ];
         }
 
         return [
             'success' => false,
-            'message' => $result['errorMessage'] ?? 'Payment request failed. Please try again.',
+            'message' => $result['header']['statusDescription'] ?? $result['fault']['description'] ?? 'Payment request failed. Please try again.',
         ];
-    }
-
-    public function queryStkStatus(string $checkoutRequestId): array
-    {
-        $token = $this->getAccessToken();
-
-        if (!$token) {
-            return ['success' => false, 'message' => 'Failed to connect to M-Pesa.'];
-        }
-
-        $timestamp = now()->format('YmdHis');
-        $password = base64_encode($this->shortcode . $this->passkey . $timestamp);
-
-        $response = Http::withToken($token)->post(
-            $this->baseUrl . '/mpesa/stkpushquery/v1/query',
-            [
-                'BusinessShortCode' => $this->shortcode,
-                'Password' => $password,
-                'Timestamp' => $timestamp,
-                'CheckoutRequestID' => $checkoutRequestId,
-            ]
-        );
-
-        return $response->json();
     }
 
     protected function formatPhone(string $phone): string
