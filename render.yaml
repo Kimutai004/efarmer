@@ -10,7 +10,7 @@
 
 services:
   - type: web
-    name: efarmer
+    name: e-farmer
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
@@ -24,8 +24,8 @@ services:
       - key: APP_DEBUG
         value: "false"
       - key: APP_URL
-        # Update if Render assigns a different hostname (or use your custom domain).
-        value: https://efarmer.onrender.com
+        # Actual Render hostname of this service.
+        value: https://e-farmer.onrender.com
       - key: APP_KEY
         # Generate with: php artisan key:generate --show
         sync: false
@@ -67,8 +67,7 @@ services:
       # M-Pesa (KCB Buni)
       - key: KCB_BUNI_CALLBACK_URL
         # Public HTTPS callback - replaces the local ngrok tunnel.
-        # Update after first deploy if the hostname differs.
-        value: https://efarmer.onrender.com/api/mpesa/callback
+        value: https://e-farmer.onrender.com/api/mpesa/callback
       - key: KCB_BUNI_CONSUMER_KEY
         sync: false
       - key: KCB_BUNI_CONSUMER_SECRET
