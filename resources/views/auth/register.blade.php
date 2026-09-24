@@ -1,92 +1,148 @@
 @extends('layouts.app')
 
-@section('title', 'Register | Efarmer')
+@section('title', 'Create Account | Efarmer')
+@section('description', 'Join Efarmer to buy goats, sell your herd and get delivery across Kenya.')
+
+@php
+    $img = fn (string $file) => asset('images/' . str_replace(' ', '%20', $file));
+@endphp
+
 @section('content')
 
-<section class="min-h-[700px] bg-gray-50 flex items-center py-16">
-<div class="max-w-md mx-auto w-full px-5">
+<section class="min-h-[calc(100vh-77px)] grid lg:grid-cols-2">
 
-    <div class="bg-white border rounded-2xl p-8 shadow-sm">
+    <!-- VISUAL PANEL -->
 
-        <div class="text-center">
+    <div class="relative hidden lg:block overflow-hidden">
 
-            <div class="text-4xl font-extrabold text-efarmer-800">
-                E<span class="text-efarmer-500">f</span>armer
+        <img
+            src="{{ $img('WhatsApp Image 2026-08-27 at 13.12.15.jpeg') }}"
+            alt="Farmers herding goats to market"
+            class="absolute inset-0 w-full h-full object-cover"
+        >
+
+        <div class="absolute inset-0 hero-overlay"></div>
+
+        <div class="absolute inset-x-0 bottom-0 p-14 text-white">
+
+            <span class="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-clay-300">
+                <i class="fa-solid fa-handshake"></i>
+                Free to join
+            </span>
+
+            <h2 class="font-display text-4xl font-extrabold mt-5 leading-tight">
+                Buy goats. Sell goats.<br>Grow your farm.
+            </h2>
+
+            <div class="mt-6 space-y-3 text-white/80 text-sm">
+
+                <p class="flex items-center gap-3">
+                    <i class="fa-solid fa-circle-check text-clay-400"></i>
+                    Verified listings with photos and records
+                </p>
+
+                <p class="flex items-center gap-3">
+                    <i class="fa-solid fa-circle-check text-clay-400"></i>
+                    Secure M-Pesa payments and instant receipts
+                </p>
+
+                <p class="flex items-center gap-3">
+                    <i class="fa-solid fa-circle-check text-clay-400"></i>
+                    Delivery arranged across all 47 counties
+                </p>
+
             </div>
 
-            <h1 class="text-2xl font-bold mt-6">
-                Create Account
+        </div>
+
+    </div>
+
+    <!-- FORM PANEL -->
+
+    <div class="flex items-center justify-center px-5 py-14">
+
+        <div class="w-full max-w-lg">
+
+            <a href="{{ route('home') }}" class="inline-block">
+                <img src="{{ asset('images/logo.png') }}" alt="Efarmer" class="h-14 w-auto object-contain">
+            </a>
+
+            <h1 class="font-display text-3xl font-extrabold text-efarmer-900 mt-7">
+                Create your account
             </h1>
 
             <p class="text-gray-500 mt-2">
-                Join Efarmer to buy and sell goats.
+                Takes less than a minute — no fees to join.
+            </p>
+
+            @if ($errors->any())
+                <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 space-y-1.5">
+                    @foreach ($errors->all() as $error)
+                        <p class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                            {{ $error }}
+                        </p>
+                    @endforeach
+                </div>
+            @endif
+
+            <form action="{{ route('register.submit') }}" method="POST" class="mt-8 grid sm:grid-cols-2 gap-5">
+                @csrf
+
+                <label class="block">
+                    <span class="field-label">First name</span>
+                    <input id="first_name" name="first_name" type="text" value="{{ old('first_name') }}" required autofocus placeholder="Jane">
+                </label>
+
+                <label class="block">
+                    <span class="field-label">Last name</span>
+                    <input id="last_name" name="last_name" type="text" value="{{ old('last_name') }}" required placeholder="Wanjiku">
+                </label>
+
+                <label class="block sm:col-span-2">
+                    <span class="field-label">Email address</span>
+                    <input id="email" name="email" type="email" value="{{ old('email') }}" required placeholder="you@example.com">
+                </label>
+
+                <label class="block">
+                    <span class="field-label">Phone number</span>
+                    <input id="phone" name="phone" type="tel" value="{{ old('phone') }}" required placeholder="0712 000 000">
+                </label>
+
+                <label class="block">
+                    <span class="field-label">National ID <span class="text-gray-400 font-medium">(optional)</span></span>
+                    <input id="national_id" name="national_id" type="text" value="{{ old('national_id') }}" placeholder="12345678">
+                </label>
+
+                <label class="block">
+                    <span class="field-label">Password</span>
+                    <input id="password" name="password" type="password" required placeholder="Min 8 characters">
+                </label>
+
+                <label class="block">
+                    <span class="field-label">Confirm password</span>
+                    <input id="password_confirmation" name="password_confirmation" type="password" required placeholder="Repeat password">
+                </label>
+
+                <div class="sm:col-span-2">
+                    <button type="submit" class="btn btn-primary btn-lg w-full">
+                        <i class="fa-solid fa-user-plus"></i>
+                        Create account
+                    </button>
+                </div>
+
+            </form>
+
+            <p class="text-center text-gray-500 mt-8">
+                Already have an account?
+                <a href="{{ route('login') }}" class="font-bold text-efarmer-700 hover:text-clay-600">
+                    Login
+                </a>
             </p>
 
         </div>
 
-        @if ($errors->any())
-            <div class="mt-5 bg-red-50 border border-red-200 text-red-600 rounded-lg p-4">
-                @foreach ($errors->all() as $error)
-                    <p class="text-sm">{{ $error }}</p>
-                @endforeach
-            </div>
-        @endif
-
-        <form action="{{ route('register.submit') }}" method="POST" class="mt-8 space-y-5">
-            @csrf
-
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label for="first_name" class="font-semibold">First Name</label>
-                    <input id="first_name" name="first_name" type="text" value="{{ old('first_name') }}" required autofocus class="w-full border rounded-lg px-4 py-3 mt-2">
-                </div>
-                <div>
-                    <label for="last_name" class="font-semibold">Last Name</label>
-                    <input id="last_name" name="last_name" type="text" value="{{ old('last_name') }}" required class="w-full border rounded-lg px-4 py-3 mt-2">
-                </div>
-            </div>
-
-            <div>
-                <label for="email" class="font-semibold">Email Address</label>
-                <input id="email" name="email" type="email" value="{{ old('email') }}" required class="w-full border rounded-lg px-4 py-3 mt-2" placeholder="you@example.com">
-            </div>
-
-            <div>
-                <label for="phone" class="font-semibold">Phone Number</label>
-                <input id="phone" name="phone" type="tel" value="{{ old('phone') }}" required class="w-full border rounded-lg px-4 py-3 mt-2" placeholder="0712345678">
-            </div>
-
-            <div>
-                <label for="national_id" class="font-semibold">National ID</label>
-                <input id="national_id" name="national_id" type="text" value="{{ old('national_id') }}" class="w-full border rounded-lg px-4 py-3 mt-2" placeholder="Optional">
-            </div>
-
-            <div>
-                <label for="password" class="font-semibold">Password</label>
-                <input id="password" name="password" type="password" required class="w-full border rounded-lg px-4 py-3 mt-2" placeholder="Min 8 characters">
-            </div>
-
-            <div>
-                <label for="password_confirmation" class="font-semibold">Confirm Password</label>
-                <input id="password_confirmation" name="password_confirmation" type="password" required class="w-full border rounded-lg px-4 py-3 mt-2" placeholder="Repeat password">
-            </div>
-
-            <button type="submit" class="w-full bg-efarmer-600 hover:bg-efarmer-700 text-white py-3 rounded-lg font-bold transition">
-                Create Account
-            </button>
-
-        </form>
-
-        <p class="text-center text-gray-500 mt-7">
-            Already have an account?
-            <a href="{{ route('login') }}" class="text-efarmer-600 font-semibold">
-                Login
-            </a>
-        </p>
-
     </div>
-
-</div>
 
 </section>
 
