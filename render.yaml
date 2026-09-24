@@ -1,0 +1,109 @@
+# Render Blueprint: deploys the Efarmer Laravel app (Docker) + managed Postgres.
+#
+# Plans: both resources default to `free` so you can try the deployment at $0.
+# For production, change:
+#   - services[0].plan:  free -> 0.1c-512mb (SMTP e-mail and disks need a paid plan)
+#   - databases[0].plan: free -> 0.1c-256mb (free Postgres expires after 30 days)
+#
+# Secrets (`sync: false`) are prompted for in the Render Dashboard the first
+# time you sync this Blueprint: APP_KEY, M-Pesa credentials, SMTP login.
+
+services:
+  - type: web
+    name: efarmer
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: APP_NAME
+        value: Efarmer
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        # Update if Render assigns a different hostname (or use your custom domain).
+        value: https://efarmer.onrender.com
+      - key: APP_KEY
+        # Generate with: php artisan key:generate --show
+        sync: false
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: CACHE_DRIVER
+        value: file
+      - key: SESSION_DRIVER
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: FILESYSTEM_DISK
+        value: local
+
+      # Database - managed Render Postgres, wired automatically below.
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: efarmer-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: efarmer-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: efarmer-db
+          property: databaseName
+      - key: DB_USERNAME
+        fromDatabase:
+          name: efarmer-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: efarmer-db
+          property: password
+
+      # M-Pesa (KCB Buni)
+      - key: KCB_BUNI_CALLBACK_URL
+        # Public HTTPS callback - replaces the local ngrok tunnel.
+        # Update after first deploy if the hostname differs.
+        value: https://efarmer.onrender.com/api/mpesa/callback
+      - key: KCB_BUNI_CONSUMER_KEY
+        sync: false
+      - key: KCB_BUNI_CONSUMER_SECRET
+        sync: false
+      - key: KCB_ACCOUNT_REFERENCE
+        sync: false
+      - key: KCB_BUNI_ORG_PASSKEY
+        sync: false
+
+      # E-mail (payment receipt mails).
+      # NOTE: free instances cannot reach SMTP ports 465/587/25 - switch
+      # MAIL_MAILER to smtp on a paid plan, or keep `log` while testing.
+      - key: MAIL_MAILER
+        value: log
+      - key: MAIL_HOST
+        value: smtp.example.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM_ADDRESS
+        value: info@e-farmer.co.ke
+      - key: MAIL_FROM_NAME
+        value: Efarmer
+
+databases:
+  - name: efarmer-db
+    databaseName: efarmer
+    user: efarmer
+    # Free Postgres expires 30 days after creation - use `0.1c-256mb` for production.
+    plan: free
+    ipAllowList:
+      # Open so you can also connect from your machine (e.g. to seed data).
+      # Restrict this once your service IPs are known.
+      - source: 0.0.0.0/0
+        description: anywhere

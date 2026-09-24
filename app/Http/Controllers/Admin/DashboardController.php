@@ -15,11 +15,12 @@ class DashboardController extends Controller
     public function index()
     {
         // Optimized goat statistics - single query with conditional aggregation
+        // (single-quoted strings keep this portable across MySQL and Postgres)
         $goatStats = Goat::selectRaw('
             COUNT(*) as total,
-            SUM(CASE WHEN status = "available" THEN 1 ELSE 0 END) as available,
-            SUM(CASE WHEN status = "reserved" THEN 1 ELSE 0 END) as reserved,
-            SUM(CASE WHEN status = "sold" THEN 1 ELSE 0 END) as sold
+            SUM(CASE WHEN status = \'available\' THEN 1 ELSE 0 END) as available,
+            SUM(CASE WHEN status = \'reserved\' THEN 1 ELSE 0 END) as reserved,
+            SUM(CASE WHEN status = \'sold\' THEN 1 ELSE 0 END) as sold
         ')->first();
 
         $totalGoats = $goatStats->total;
@@ -58,9 +59,9 @@ class DashboardController extends Controller
         // Profit
         $profit = $totalSales - $totalExpenses;
 
-        // Monthly sales
+        // Monthly sales (EXTRACT works on both MySQL and Postgres)
         $monthlySales = Sale::select(
-                DB::raw('MONTH(sale_date) as month'),
+                DB::raw('EXTRACT(MONTH FROM sale_date) as month'),
                 DB::raw('SUM(total) as total')
             )
             ->where('status', 'completed')

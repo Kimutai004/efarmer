@@ -36,6 +36,11 @@ use App\Http\Controllers\Admin\ReportController;
 |--------------------------------------------------------------------------
 */
 
+// Lightweight health endpoint used by Render's health checks (no DB access).
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok']);
+})->name('health');
+
 Route::get('/', function () {
     $featuredGoats = \App\Models\Goat::with(['breed', 'photos'])
         ->where('status', 'available')
