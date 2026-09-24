@@ -22,6 +22,7 @@ RUN composer dump-autoload --optimize --no-interaction
 FROM php:8.2-fpm-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        gettext-base \
         nginx \
         supervisor \
         libpq-dev \
